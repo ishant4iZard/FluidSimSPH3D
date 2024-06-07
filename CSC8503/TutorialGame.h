@@ -43,9 +43,13 @@ namespace NCL {
 			Texture*	basicTex	= nullptr;
 			Texture*	sandTex		= nullptr;
 			Shader*		basicShader = nullptr;
-
+			Shader*		instancedParticleShader = nullptr;
+			
 			void InitDefaultFloor();
+			Vector3* positionList;
 
+			GameObject* ParticleObject;
+			
 		private:
 
 		};

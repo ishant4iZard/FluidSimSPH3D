@@ -37,7 +37,7 @@ namespace NCL {
 			boundingArea fence;
 
 			bool gravityEnabled = 1;
-			Vector3 gravity(0, 10,0);
+			Vector3 gravity = Vector3(0.f, 9.8f, 0.f);
 
 			double targetDensity = 20.f;
 			float pressureMultiplier = 0.001f;
@@ -45,18 +45,33 @@ namespace NCL {
 
 			Vector3 offsetsGrids[27] = {
 				Vector3(0,0,0),
-				Vector3(1,0),
-				Vector3(1,1),
-				Vector3(0,1),
-				Vector3(-1,1),
-				Vector3(-1,0),
-				Vector3(-1,-1),
-				Vector3(0,-1),
-				Vector3(1,-1)
-
+				Vector3(0,0,1),
+				Vector3(0,0,-1),
+				Vector3(0,1,0),
+				Vector3(0,1,1),
+				Vector3(0,1,-1),
+				Vector3(0,-1,0),
+				Vector3(0,-1,1),
+				Vector3(0,-1,-1),
+				Vector3(1,0,0),
+				Vector3(1,0,1),
+				Vector3(1,0,-1),
+				Vector3(1,1,0),
+				Vector3(1,1,1),
+				Vector3(1,1,-1),
+				Vector3(1,-1,0),
+				Vector3(1,-1,1),
+				Vector3(1,-1,-1),
+				Vector3(-1,0,0),
+				Vector3(-1,0,1),
+				Vector3(-1,0,-1),
+				Vector3(-1,1,0),
+				Vector3(-1,1,1),
+				Vector3(-1,1,-1),
+				Vector3(-1,-1,0),
+				Vector3(-1,-1,1),
+				Vector3(-1,-1,-1)
 			};
-
-			sf::VertexArray points;
 
 #pragma region HelperFunctionsAndConstants
 			double SmoothingKernelMultiplier;
@@ -85,10 +100,11 @@ namespace NCL {
 
 			Vector3 GetRandomDir() {
 				float x = (rand() % 100) / 100.0f;
-				float y = sqrt(1 - (x * x));
+				float y = (rand() % 100) / 100.0f;
+				float z = (rand() % 100) / 100.0f;
 
-				Vector3 a(x, y);
-				return a;
+				Vector3 a(x, y , z);
+				return a.Normalised();
 			}
 
 			int cellHash(int x, int y) {
@@ -120,7 +136,6 @@ namespace NCL {
 			~SPH();
 
 			void Update(float dt);
-			void Draw(sf::RenderWindow& window);
 		};
 	}
 }

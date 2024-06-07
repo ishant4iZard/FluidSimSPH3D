@@ -36,6 +36,7 @@ namespace NCL {
 			void RenderShadowMap();
 			void RenderCamera(); 
 			void RenderSkybox();
+			void RenderInstancedRenderObject();
 
 			void LoadSkybox();
 
@@ -43,6 +44,7 @@ namespace NCL {
 			void SetDebugLineBufferSizes(size_t newVertCount);
 
 			vector<const RenderObject*> activeObjects;
+			vector<const RenderObject*> instancedRenderObjectList;
 
 			OGLShader*  debugShader;
 			OGLShader*  skyboxShader;

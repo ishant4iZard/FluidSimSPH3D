@@ -44,6 +44,7 @@ namespace NCL::Rendering {
 			Tangents,
 			JointWeights,
 			JointIndices,
+			InstancedParticlePosition,
 			MAX_ATTRIBUTES
 		};	
 		
@@ -54,7 +55,8 @@ namespace NCL::Rendering {
 			std::string("Normals"),
 			std::string("Tangents"),
 			std::string("Joint Weights"),
-			std::string("Joint Indices")
+			std::string("Joint Indices"),
+			std::string("Instanced Particle Position")
 		};
 	};
 
@@ -176,12 +178,14 @@ namespace NCL::Rendering {
 		const std::vector<Vector4>&		GetTangentData()		const { return tangents;	}
 		const std::vector<Vector4>&		GetSkinWeightData()		const { return skinWeights; }
 		const std::vector<Vector4i>&		GetSkinIndexData()		const { return skinIndices; }
+		const std::vector<Vector3>& GetInstanceParticlePositionListData() const { return instancedParticlePosition; }
 
 		const std::vector<int>& GetJointParents()	const {
 			return jointParents;
 		}
 
 		const std::vector<unsigned int>& GetIndexData()			const { return indices;		}
+		const unsigned int& GetInstanceCount() { return instancedParticlePosition.size(); }
 
 		void SetVertexPositions(const std::vector<Vector3>& newVerts);
 		void SetVertexTextureCoords(const std::vector<Vector2>& newTex);
@@ -194,9 +198,15 @@ namespace NCL::Rendering {
 		void SetVertexSkinWeights(const std::vector<Vector4>& newSkinWeights);
 		void SetVertexSkinIndices(const std::vector<Vector4i>& newSkinIndices);
 
+		void SetInstanceModelMatrices(Vector3* inInstanceParticlePositionList, const unsigned int& inParticleCount);
+		void UpdateParticlesPositionInstance(Vector3* inInstanceParticlePositionList, const unsigned int& inParticleCount);
 		void SetDebugName(const std::string& debugName);
 
+		void SetInstanceCount(const unsigned int& inInstanceCount);
+
 		virtual void UploadToGPU(Rendering::RendererBase* renderer = nullptr) = 0;
+		virtual void GenerateInstanceModelMatrix() = 0;
+		virtual void UpdateInstanceModelMatrix() = 0;
 
 		uint32_t GetAssetID() const {
 			return assetID;
@@ -221,6 +231,7 @@ namespace NCL::Rendering {
 		std::vector<Vector3>		normals;
 		std::vector<Vector4>		tangents;
 		std::vector<unsigned int>	indices;
+		std::vector<Vector3>        instancedParticlePosition;
 		std::vector<SubMesh>		subMeshes;
 		std::vector<std::string>	subMeshNames;
 
@@ -230,6 +241,8 @@ namespace NCL::Rendering {
 		std::vector<int>			jointParents;
 		std::vector<Matrix4>		bindPose;
 		std::vector<Matrix4>		inverseBindPose;
+
+		unsigned int instanceCount = 0;
 	};
 
 	using UniqueMesh = std::unique_ptr<Mesh>;

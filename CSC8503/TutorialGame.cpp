@@ -33,6 +33,19 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(3, "XLook");
 	controller.MapAxis(4, "YLook");
 
+	positionList = new Vector3[9]
+	{	
+		Vector3(0, 0, 0),
+		Vector3(0, 0, 1),
+		Vector3(0, 0, -1),
+		Vector3(0, 1, 0),
+		Vector3(0, 1, 1),
+		Vector3(0, 1, -1),
+		Vector3(0, -1, 0),
+		Vector3(0, -1, 1),
+		Vector3(0, -1, -1)
+	};
+
 	InitialiseAssets();
 
 	InitDefaultFloor();
@@ -51,6 +64,7 @@ void TutorialGame::InitialiseAssets() {
 	basicTex	= renderer->LoadTexture("checkerboard.png");
 	sandTex		= renderer->LoadTexture("sand.jpg");
 	basicShader = renderer->LoadShader("scene.vert", "scene.frag");
+	instancedParticleShader = renderer->LoadShader("sceneInstanced.vert", "scene.frag");
 
 	InitCamera();
 }
@@ -60,7 +74,7 @@ TutorialGame::~TutorialGame()	{
 
 	delete basicTex;
 	delete basicShader;
-
+	delete instancedParticleShader;
 	delete renderer;
 	delete world;
 }
@@ -73,7 +87,9 @@ void TutorialGame::UpdateGame(float dt) {
 
 	world->UpdateWorld(dt);
 
+	positionList[2] = positionList[2] + Vector3(0, 0, 1) * dt;
 
+	ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, 9);
 
 	renderer->Update(dt);
 
@@ -108,19 +124,17 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 		.SetScale(sphereSize)
 		.SetPosition(position);
 
-	sphere->SetRenderObject(new RenderObject(&sphere->GetTransform(), sphereMesh, basicTex, basicShader));
+	sphere->SetRenderObject(new RenderObject(&sphere->GetTransform(), sphereMesh, basicTex, instancedParticleShader));
 
 	world->AddGameObject(sphere);
+
+	sphereMesh->SetInstanceModelMatrices(positionList, 9);
 
 	return sphere;
 }
 
 void TutorialGame::InitDefaultFloor() {
-	AddSphereToWorld(Vector3(-64, -20, 0), 10);
-	AddSphereToWorld(Vector3(32, -20, -96), 20);
-	AddSphereToWorld(Vector3(96, -20, -86), 30);
-	AddSphereToWorld(Vector3(32, -20, 96), 40);
-	AddSphereToWorld(Vector3(96, -20, 86), 50);
+	ParticleObject = AddSphereToWorld(Vector3(-64, -20, 0), 0.5f);
 }
 
 
