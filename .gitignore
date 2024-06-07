@@ -9,3 +9,87 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.ags
+*.tlog
+
+*.vsidx
+*.ipch
+*.db
+/.vs/CSC8503/FileContentIndex/read.lock
+
+# CMake
+cmake-build-debug-visual-studio/*
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+
+# Builds
+/Build
+**/Prospero
+**/x64
+**/Debug
+**/Release
+/out/build/x64-Debug
+
+# Visual Studio
+.vs/
+.vscode/
+
+# Visual Studio project files
+*.vcxproj.user
+*.vcxproj
+*.filters
+
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
+
+# OPENGL RENDERER
+/OpenGLRendering/OpenGLRendering.dir/Debug
+/x64/Debug/CSC8503.pdb
+/x64/Debug/CSC8503CoreClasses.pdb
+x64/Debug/CSC8503.pdb
+*.pdb
