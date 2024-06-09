@@ -9,6 +9,7 @@
 
 namespace NCL {
 	namespace CSC8503 {
+		class SPH;
 		class TutorialGame		
 		{
 		public:
@@ -49,6 +50,9 @@ namespace NCL {
 			Vector3* positionList;
 
 			GameObject* ParticleObject;
+
+			SPH* water;
+			unsigned int numParticles;
 			
 		private:
 

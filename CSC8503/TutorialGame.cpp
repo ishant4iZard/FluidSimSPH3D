@@ -2,7 +2,7 @@
 #include "GameWorld.h"
 #include "RenderObject.h"
 #include "TextureLoader.h"
-
+#include "ParticlePhysics.h"
 #include <Maths.h>
 
 
@@ -33,23 +33,17 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(3, "XLook");
 	controller.MapAxis(4, "YLook");
 
-	positionList = new Vector3[9]
-	{	
-		Vector3(0, 0, 0),
-		Vector3(0, 0, 1),
-		Vector3(0, 0, -1),
-		Vector3(0, 1, 0),
-		Vector3(0, 1, 1),
-		Vector3(0, 1, -1),
-		Vector3(0, -1, 0),
-		Vector3(0, -1, 1),
-		Vector3(0, -1, -1)
-	};
+	
+	numParticles = 150000;
+	positionList = new Vector3[numParticles];
+	
+	water = new SPH(numParticles, positionList);
 
 	InitialiseAssets();
 
 	InitDefaultFloor();
 }
+
 
 /*
 
@@ -87,20 +81,46 @@ void TutorialGame::UpdateGame(float dt) {
 
 	world->UpdateWorld(dt);
 
-	positionList[2] = positionList[2] + Vector3(0, 0, 1) * dt;
+	auto start_time
+		= std::chrono::high_resolution_clock::now();
 
-	ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, 9);
+	water->Update(dt, positionList);
+
+	auto physics_end_time
+		= std::chrono::high_resolution_clock::now();
+
+	auto taken_time_physics = std::chrono::duration_cast<
+		std::chrono::milliseconds>(
+			physics_end_time - start_time)
+		.count();
+
+	//positionList[1000] = positionList[1000] + Vector3(0, 0, 1) * dt;
+
+	ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, numParticles);
 
 	renderer->Update(dt);
 
 	renderer->Render();
 
 	Debug::UpdateRenderables(dt);
+
+	auto render_end_time
+		= std::chrono::high_resolution_clock::now();
+	auto taken_time_render = std::chrono::duration_cast<
+		std::chrono::milliseconds>(
+			render_end_time - physics_end_time)
+		.count();
+
+	std::cout << "\r"
+		<< "phy execution time: " << taken_time_physics
+		<< "ms "
+		<< "ren execution time: " << taken_time_render
+		<< "ms ";
 }
 
 void TutorialGame::InitCamera() {
 	world->GetMainCamera().SetNearPlane(0.1f);
-	world->GetMainCamera().SetFarPlane(500.0f);
+	world->GetMainCamera().SetFarPlane(1000.0f);
 	world->GetMainCamera().SetPitch(-15.0f);
 	world->GetMainCamera().SetYaw(315.0f);
 	world->GetMainCamera().SetPosition(Vector3(-60, 40, 60));
@@ -126,15 +146,17 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 	sphere->SetRenderObject(new RenderObject(&sphere->GetTransform(), sphereMesh, basicTex, instancedParticleShader));
 
+	sphere->GetRenderObject()->SetColour(Vector4(0, 0, 1, 0.9f));
+
 	world->AddGameObject(sphere);
 
-	sphereMesh->SetInstanceModelMatrices(positionList, 9);
+	sphereMesh->SetInstanceModelMatrices(positionList, numParticles);
 
 	return sphere;
 }
 
 void TutorialGame::InitDefaultFloor() {
-	ParticleObject = AddSphereToWorld(Vector3(-64, -20, 0), 0.5f);
+	ParticleObject = AddSphereToWorld(Vector3(0, 0, 0), 0.5f);
 }
 
 
