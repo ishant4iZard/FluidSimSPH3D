@@ -3,12 +3,44 @@
 #include "RenderObject.h"
 #include "TextureLoader.h"
 #include "ParticlePhysics.h"
+#include "Assets.h"
 #include <Maths.h>
 
 
 using namespace NCL;
 using namespace CSC8503;
 
+void setupBuffers(const std::vector<float>& A, const std::vector<float>& B, GLuint& ssboA, GLuint& ssboB, GLuint& ssboC) {
+	glGenBuffers(1, &ssboA);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboA);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, A.size() * sizeof(float), A.data(), GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboA);
+
+	glGenBuffers(1, &ssboB);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboB);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, B.size() * sizeof(float), B.data(), GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboB);
+
+	glGenBuffers(1, &ssboC);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboC);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, A.size() * sizeof(float), nullptr, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboC);
+}
+
+
+void dispatchComputeShader(GLuint program, size_t numElements) {
+	glUseProgram(program);
+	GLuint numGroups = (numElements + 1023) / 1024;
+	glDispatchCompute(numGroups, 1, 1);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+}
+
+void getResults(GLuint ssboC, std::vector<float>& C) {
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboC);
+	float* ptr = (float*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	C.assign(ptr, ptr + C.size());
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+}
 
 
 TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
@@ -34,7 +66,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(4, "YLook");
 
 	
-	numParticles = 150000;
+	numParticles = 50000;
 	positionList = new Vector3[numParticles];
 	
 	water = new SPH(numParticles, positionList);
@@ -42,6 +74,28 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	InitialiseAssets();
 
 	InitDefaultFloor();
+
+	std::vector<float> A = { 1.0f, 2.0f, 3.0f, 4.0f };
+	std::vector<float> B = { 5.0f, 6.0f, 7.0f, 8.0f };
+	std::vector<float> C(A.size());
+
+	GLuint ssboA, ssboB, ssboC;
+	setupBuffers(A, B, ssboA, ssboB, ssboC);
+
+	dispatchComputeShader(setParticlesInGridsSource, A.size());
+
+	getResults(ssboC, C);
+
+	// Print results
+	for (size_t i = 0; i < C.size(); ++i) {
+		std::cout << "C[" << i << "] = " << C[i] << std::endl;
+	}
+
+	// Cleanup
+	glDeleteBuffers(1, &ssboA);
+	glDeleteBuffers(1, &ssboB);
+	glDeleteBuffers(1, &ssboC);
+	
 }
 
 
@@ -60,7 +114,70 @@ void TutorialGame::InitialiseAssets() {
 	basicShader = renderer->LoadShader("scene.vert", "scene.frag");
 	instancedParticleShader = renderer->LoadShader("sceneInstanced.vert", "scene.frag");
 
+	InitComputeShaders();
+
 	InitCamera();
+}
+
+void NCL::CSC8503::TutorialGame::InitComputeShaders()
+{
+	/*setParticlesInGridsSource =			CompileComputeShader("setParticlesInGrids.comp");
+	parallelSortSource =				CompileComputeShader("parallelSort.comp");
+	updateDensityPressureSource =		CompileComputeShader("updateDensityPressure.comp");
+	updatePressureAccelerationSource =	CompileComputeShader("updatePressureAcceleration.comp");
+	updateParticlesSource =				CompileComputeShader("updateParticles.comp");*/
+
+	setParticlesInGridsSource = CompileComputeShader("AddNumbers.comp");
+}
+
+GLuint TutorialGame::CompileComputeShader(const std::string& filename)
+{
+	GLuint programID = glCreateProgram();
+	std::string fileContents = "";
+	
+	if (Assets::ReadTextFile(Assets::SHADERDIR + filename, fileContents)) {
+		OGLShader::Preprocessor(fileContents);
+
+		GLuint shaderIDs = glCreateShader(GL_COMPUTE_SHADER);
+
+		std::cout << "Reading " << " shader " << filename << "\n";
+
+		const char* stringData = fileContents.c_str();
+		int			stringLength = (int)fileContents.length();
+		glShaderSource(shaderIDs, 1, &stringData, nullptr);
+		glCompileShader(shaderIDs);
+
+		GLint success;
+		glGetShaderiv(shaderIDs, GL_COMPILE_STATUS, &success);
+
+		if (success == GL_TRUE) {
+			glAttachShader(programID, shaderIDs);
+		}
+		else {
+			std::cout << " shader " << filename << " has failed!" << "\n";
+		}
+
+		glDeleteShader(shaderIDs);
+
+	}
+	
+	GLint success;
+
+	glLinkProgram(programID);
+	glGetProgramiv(programID, GL_LINK_STATUS, &success);
+
+	if (!success) {
+		GLint maxLength = 0;
+		glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &maxLength);
+		std::vector<GLchar> errorLog(maxLength);
+		glGetProgramInfoLog(programID, maxLength, &maxLength, &errorLog[0]);
+		std::cerr << "Error linking program:" << std::endl << errorLog.data() << std::endl;
+		glDeleteProgram(programID);
+		return 0;
+	}
+
+
+	return programID;
 }
 
 TutorialGame::~TutorialGame()	{
