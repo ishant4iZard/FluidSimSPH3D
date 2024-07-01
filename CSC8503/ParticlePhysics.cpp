@@ -441,7 +441,7 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    //glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
+    glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
 
     std::for_each(std::execution::par_unseq,
         particles.begin(), particles.end(), [&](const Particle& p) {
