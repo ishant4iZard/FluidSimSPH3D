@@ -1,4 +1,4 @@
-#version 400 core
+#version 430 core
 
 uniform mat4 modelMatrix 	= mat4(1.0f);
 uniform mat4 viewMatrix 	= mat4(1.0f);
@@ -14,6 +14,22 @@ layout(location = 7) in vec3 instancedParticlePosition;
 uniform vec4 		objectColour = vec4(1,1,1,1);
 
 uniform bool hasVertexColours = false;
+
+struct Particle {
+    vec3 Position;
+    vec3 PredictedPosition;
+    vec3 Velocity;
+    vec3 PressureAcceleration;
+
+    float density;
+    float pressure;
+
+    uint Gridhash;
+};
+
+layout(std430, binding = 0) buffer ParticleBuffer {
+    Particle particles[];
+};
 
 out Vertex
 {
@@ -34,7 +50,9 @@ mat4 UpdateModelMatrixPosition(mat4 modelMatrix, vec3 newPosition) {
 
 void main(void)
 {
-	mat4 newModelMatrix = UpdateModelMatrixPosition(modelMatrix, instancedParticlePosition);
+	uint index = gl_InstanceID;
+
+	mat4 newModelMatrix = UpdateModelMatrixPosition(modelMatrix, particles[index].Position);
 
 	mat4 mvp 		  = (projMatrix * viewMatrix * newModelMatrix);
 	mat3 normalMatrix = transpose ( inverse ( mat3 ( newModelMatrix )));

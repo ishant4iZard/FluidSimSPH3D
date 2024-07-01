@@ -18,9 +18,6 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
     SmoothingKernelMultiplier = 5 * (6 / (PI * pow(smoothingRadius / 100, 4)));
     SmoothingKernelDerivativeMultiplier = 5 * (12 / (PI * pow(smoothingRadius / 100, 4)));
 
-    NoGridsX = (fence.right - fence.left / smoothingRadius) + 1;
-    NoGridsY = (fence.bottom - fence.top / smoothingRadius) + 1;
-    NoGridsZ = (fence.back - fence.front / smoothingRadius) + 1;
 
 
     hashLookupTable = std::vector<int>(numParticles, INT_MAX);
@@ -441,11 +438,11 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
+    /*glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
 
     std::for_each(std::execution::par_unseq,
         particles.begin(), particles.end(), [&](const Particle& p) {
             int i = &p - &(particles[0]);
             PosList[i] = particles[i].Position;
-        });
+        });*/
 }

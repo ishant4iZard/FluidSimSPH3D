@@ -75,7 +75,12 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	InitDefaultFloor();
 
+	particleBuffer = water->getparticleBuffer();
 	
+	OGLShader* shader = (OGLShader*)(ParticleObject->GetRenderObject()->GetShader());
+	glUseProgram(shader->GetProgramID());
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
 }
 
 
@@ -202,16 +207,16 @@ void TutorialGame::UpdateGame(float dt) {
 
 	//positionList[1000] = positionList[1000] + Vector3(0, 0, 1) * dt;
 
-	ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, numParticles);
+	//ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, numParticles);
 
 	renderer->Update(dt);
 
 	renderer->Render();
 
 	Debug::UpdateRenderables(dt);
-
 	auto render_end_time
 		= std::chrono::high_resolution_clock::now();
+
 	auto taken_time_render = std::chrono::duration_cast<
 		std::chrono::milliseconds>(
 			render_end_time - physics_end_time)

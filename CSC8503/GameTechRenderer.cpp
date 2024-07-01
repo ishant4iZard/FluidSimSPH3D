@@ -304,7 +304,9 @@ void NCL::CSC8503::GameTechRenderer::RenderInstancedRenderObject()
 
 		glUniform1i(hasVColLocation, !(*tempInstancedRenderObject).GetMesh()->GetColourData().empty());
 
-		glUniform1i(hasTexLocation, (OGLTexture*)(*tempInstancedRenderObject).GetDefaultTexture() ? 1 : 0);
+		glUniform1i(hasTexLocation, (OGLTexture*)(*tempInstancedRenderObject).GetDefaultTexture() ?1 : 0);
+
+		
 
 		BindMesh((OGLMesh&)*(*tempInstancedRenderObject).GetMesh());
 		size_t layerCount = (*tempInstancedRenderObject).GetMesh()->GetSubMeshCount();

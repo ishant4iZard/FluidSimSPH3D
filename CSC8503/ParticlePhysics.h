@@ -32,10 +32,6 @@ namespace NCL {
 			float dampingRate = 0.98f;
 
 #pragma endregion
-
-			int NoGridsX;
-			int NoGridsY;
-			int NoGridsZ;
 			std::vector<int> hashLookupTable;
 
 			boundingArea fence;
@@ -163,6 +159,10 @@ namespace NCL {
 			GLuint updateParticlesSource;
 
 			void Update(float dt, Vector3* PosList);
+
+			GLuint getparticleBuffer() {
+				return particleBuffer;
+			}
 		};
 	}
 }
