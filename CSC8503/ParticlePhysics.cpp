@@ -8,7 +8,7 @@ using namespace NCL::CSC8503;
 SPH::SPH(int inNumParticles, Vector3* PosList)
 {
     numParticles = inNumParticles;
-    particles = new Particle[numParticles];
+    particles.resize(numParticles);
 
     particleRadius = 0.5f;
 
@@ -23,42 +23,61 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
     NoGridsZ = (fence.back - fence.front / smoothingRadius) + 1;
 
 
-    hashLookupTable = new int[NoGridsX * NoGridsY * NoGridsZ];
+    hashLookupTable = std::vector<int>(numParticles, INT_MAX);
     resetHashLookupTable();
 
     GridStart(PosList);
     //randomPositionStart(screenWidth, screenHeight);
 
+    glGenBuffers(1, &particleBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, particles.size() * sizeof(Particle), particles.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+
+    // Create sortedBuffer without initializing data (just allocate space)
+    glGenBuffers(1, &hashLookupBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, hashLookupBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(int), hashLookupTable.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+
+    glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
+
+    glGenBuffers(1, &postitionBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, postitionBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(Vector4), nullptr, GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, postitionBuffer);
+
+    //local_size_x = 256;
 }
 
 SPH::~SPH()
 {
     //delete hashLookupTable;
-    delete[]particles;
+    //delete[]particles;
 }
 
 void::SPH::Update(float dt, Vector3* PosList) {
-    /*auto start_time
-        = std::chrono::high_resolution_clock::now();*/
+    auto start_time
+        = std::chrono::high_resolution_clock::now();
 
-    SetParticlesInGridsHashing();
-    /*auto SetParticlesInGridsHashing_end_time
-        = std::chrono::high_resolution_clock::now();*/
+    SetParticlesInGridsHashingGPU();
+    auto SetParticlesInGridsHashing_end_time
+        = std::chrono::high_resolution_clock::now();
 
-    UpdateDensityandPressureGrid();
-    /*auto UpdateDensityandPressureGrid_end_time
-        = std::chrono::high_resolution_clock::now();*/
+    UpdateDensityandPressureGridGPU();
+    auto UpdateDensityandPressureGrid_end_time
+        = std::chrono::high_resolution_clock::now();
 
-    UpdatePressureAccelerationGrid();
-    /*auto UpdatePressureAccelerationGrid_end_time
-        = std::chrono::high_resolution_clock::now();*/
+    UpdatePressureAccelerationGridGPU();
+    auto UpdatePressureAccelerationGrid_end_time
+        = std::chrono::high_resolution_clock::now();
 
-    updateParticle(dt, PosList);
-    /*auto updateParticle_end_time
-        = std::chrono::high_resolution_clock::now();*/
+    updateParticleGPU(dt, PosList);
+    auto updateParticle_end_time
+        = std::chrono::high_resolution_clock::now();
 
     resetHashLookupTable();
-    /*auto resetHashLookupTable_end_time
+    auto resetHashLookupTable_end_time
         = std::chrono::high_resolution_clock::now();
 
     auto taken_time_SetParticlesInGridsHashing = std::chrono::duration_cast<
@@ -97,7 +116,7 @@ void::SPH::Update(float dt, Vector3* PosList) {
         << "ms \n"
         << "reset execution time: " << taken_time_resetHashLookupTable
         << "ms \n";
-        */
+        
 
 }
 
@@ -140,12 +159,12 @@ void SPH::updateParticle(float dt, Vector3* PosList)
 {
 
     auto updateParticleProperties = [&](Particle& p) {
-        int index = &p - particles;
-        p.Acceleration = Vector3();
+        int index = &p - &(particles[0]);
+        //p.Acceleration = Vector3();
         p.Velocity += p.PressureAcceleration * dt;
         if (gravityEnabled)
-            p.Acceleration += gravity;
-        p.Velocity += p.Acceleration * dt;
+            p.Velocity += gravity * dt;
+        //p.Velocity += p.Acceleration * dt;
         p.Position += p.Velocity * dt;
         if (p.Position.y >= fence.bottom - particleRadius) {
             p.Position.y = fence.bottom - (0.0001f + particleRadius);
@@ -174,66 +193,76 @@ void SPH::updateParticle(float dt, Vector3* PosList)
 
         PosList[index] = p.Position;
 
-        p.PredictedPosition = p.Position + p.Velocity * (1 / 30.0f) + p.Acceleration *0.5f * (1 /30.0f) * (1 / 30.0f);
+        p.PredictedPosition = p.Position + p.Velocity * (1 / 30.0f) + (gravityEnabled ? gravity : Vector3()) * 0.5f * (1 / 30.0f) * (1 / 30.0f);
 
         p.PredictedPosition.x = std::clamp(p.PredictedPosition.x, (float)fence.left, (float)fence.right);
         p.PredictedPosition.y = std::clamp(p.PredictedPosition.y, (float)fence.top, (float)fence.bottom);
         p.PredictedPosition.z = std::clamp(p.PredictedPosition.z, (float)fence.front, (float)fence.back);
+
     };
 
     std::for_each(std::execution::par_unseq,
-        particles, particles + numParticles,
+        particles.begin(), particles.end(),
         updateParticleProperties);
 
 }
 
-double SPH::calcDensityGrid(int particleIndex, Vector3 gridPos)
+
+
+double SPH::calcDensityGrid(int particleIndex, Vector3i gridPos)
 {
     double density = 0;
 
-    for (auto offset : offsetsGrids) {
-        int key = cellHash(gridPos.x + offset.x, gridPos.y + offset.y, gridPos.z + offset.z);
-        int startIndex = hashLookupTable[key];
-        for (int i = startIndex; i < numParticles; i++) {
-            if (key != particles[i].Gridhash) break;
+    for (int ix = -1; ix < 2; ix++) {
+        for (int iy = -1; iy < 2; iy++) {
+            for (int iz = -1; iz < 2; iz++) {
+                int key = cellHash(gridPos.x + ix, gridPos.y + iy, gridPos.z + iz);
+                int startIndex = hashLookupTable[key];
+                for (int i = startIndex; i < numParticles; i++) {
+                    if (key != particles[i].Gridhash) break;
 
-            float dst = (particles[i].PredictedPosition - particles[particleIndex].PredictedPosition).Length();
-            double influence = smoothingKernel(smoothingRadius, dst);
-            density += mass * influence;
+                    float dst = (particles[i].PredictedPosition - particles[particleIndex].PredictedPosition).Length();
+                    double influence = smoothingKernel(smoothingRadius, dst);
+                    density += mass * influence;
 
+                }
+            }
         }
     }
 
     return density;
 }
 
-Vector3 SPH::calcPressureForceGrid(int particleIndex, Vector3 gridPos)
+Vector3 SPH::calcPressureForceGrid(int particleIndex, Vector3i gridPos)
 {
     Vector3 pressureForce = Vector3(0, 0, 0);
-    //std::vector<Vector3> offsets = gridsys[gridPos.x][gridPos.y]->offsetGrids;
 
-    for (auto offset : offsetsGrids) {
-        int key = cellHash(gridPos.x + offset.x, gridPos.y + offset.y, gridPos.z + offset.z);
-        int startIndex = hashLookupTable[key];
-        for (int i = startIndex; i < numParticles; i++) {
-            if (key != particles[i].Gridhash) break;
+    for (int ix = -1; ix < 2; ix++) {
+        for (int iy = -1; iy < 2; iy++) {
+            for (int iz = -1; iz < 2; iz++) {
+                int key = cellHash(gridPos.x + ix, gridPos.y + iy, gridPos.z + iz);
+                int startIndex = hashLookupTable[key];
+                for (int i = startIndex; i < numParticles; i++) {
+                    if (key != particles[i].Gridhash) break;
 
-            if (particleIndex == i) continue;
+                    if (particleIndex == i) continue;
 
-            Vector3 offsetvec(particles[i].PredictedPosition - particles[particleIndex].PredictedPosition);
+                    Vector3 offsetvec(particles[i].PredictedPosition - particles[particleIndex].PredictedPosition);
 
-            float dst = offsetvec.Length();
-            if (dst > smoothingRadius) continue;
-            Vector3 dir = dst == 0 ? GetRandomDir() : (offsetvec) / dst;
-            double m_slope = smoothingKernerDerivative(smoothingRadius, dst);
-            double m_density = particles[i].density;
-            double sharedPressure = (particles[i].pressure + particles[particleIndex].pressure) / 2;
-            pressureForce += dir * (float)(sharedPressure * m_slope * mass / m_density);
+                    float dst = offsetvec.Length();
+                    if (dst > smoothingRadius) continue;
+                    Vector3 dir = dst == 0 ? GetRandomDir() : (offsetvec) / dst;
+                    double m_slope = smoothingKernerDerivative(smoothingRadius, dst);
+                    double m_density = particles[i].density;
+                    double sharedPressure = (particles[i].pressure + particles[particleIndex].pressure) / 2;
+                    pressureForce += dir * (float)(sharedPressure * m_slope * mass / m_density);
 
-            //add Viscoscity
-            Vector3 velocityDiff = particles[i].Velocity - particles[particleIndex].Velocity;
-            pressureForce += velocityDiff * viscosityMultiplier * (float)(-m_slope / (m_density * 100));
+                    //add Viscoscity
+                    Vector3 velocityDiff = particles[i].Velocity - particles[particleIndex].Velocity;
+                    pressureForce += velocityDiff * viscosityMultiplier * (float)(-m_slope / (m_density * 100));
 
+                }
+            }
         }
     }
 
@@ -244,12 +273,14 @@ void SPH::UpdateDensityandPressureGrid()
 {
 
     auto calculateDensityAndPressure = [&](Particle& p) {
-        p.density = calcDensityGrid(&p - particles, p.GridPos); // Assuming calcDensityGrid takes a particle object
+        int index = &p - &(particles[0]);
+        Vector3i gridpos = Vector3i(p.Position.x / smoothingRadius , p.Position.y / smoothingRadius, p.Position.z / smoothingRadius);
+        p.density = calcDensityGrid(index, gridpos); // Assuming calcDensityGrid takes a particle object
         p.pressure = ConvertDensityToPressure(p.density);
         };
 
     std::for_each(std::execution::par_unseq,
-        particles, particles + numParticles,
+        particles.begin(), particles.end(),
         calculateDensityAndPressure);
 
 }
@@ -257,12 +288,14 @@ void SPH::UpdateDensityandPressureGrid()
 void SPH::UpdatePressureAccelerationGrid()
 {
     auto calculatePressureAcceleration = [&](Particle& p) {
-        int i = &p - particles;
-        particles[i].PressureAcceleration = calcPressureForceGrid(i, particles[i].GridPos);
+        int i = &p - &(particles[0]);
+        Vector3i gridpos = Vector3i(p.Position.x / smoothingRadius, p.Position.y / smoothingRadius, p.Position.z / smoothingRadius);
+
+        particles[i].PressureAcceleration = calcPressureForceGrid(i, gridpos);
         };
 
     std::for_each(std::execution::par_unseq,
-        particles, particles + numParticles,
+        particles.begin(), particles.end(),
         calculatePressureAcceleration);
 
 }
@@ -270,17 +303,17 @@ void SPH::UpdatePressureAccelerationGrid()
 void SPH::SetParticlesInGridsHashing()
 {
     std::for_each(std::execution::par_unseq,
-        particles, particles + numParticles,
+        particles.begin(), particles.end(),
         [&](Particle& p) {
             int gridX = (p.PredictedPosition.x / smoothingRadius);
             int gridZ = (p.PredictedPosition.z / smoothingRadius);
             int gridY = (p.PredictedPosition.y / smoothingRadius);
             p.Gridhash = cellHash(gridX, gridY,gridZ);
-            p.GridPos = Vector3(gridX, gridY,gridZ);
+            //p.GridPos = Vector3i(gridX, gridY,gridZ);
         });
 
     //sort particles according to hash
-    std::sort(std::execution::par, particles, particles + numParticles, [](const Particle& a, const Particle& b) {
+    std::sort(std::execution::par, particles.begin(), particles.end(), [](const Particle& a, const Particle& b) {
         return a.Gridhash < b.Gridhash;
         });
 
@@ -295,3 +328,140 @@ void SPH::SetParticlesInGridsHashing()
 }
 
 
+void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
+{
+    glUseProgram(setParticlesInGridsSource);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleBuffer);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0 ,particles.size() * sizeof(Particle), particles.data());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glUniform1f(0, smoothingRadius);
+    glUniform1i(1, hashX);
+    glUniform1i(2, hashY);
+    glUniform1i(3, hashZ);
+    int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
+    glDispatchCompute(dispatchsize, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+
+
+    glUseProgram(parallelSortSource);
+    glUniform1i(0, numParticles);
+
+    int l2numparticles = NextPowerOfTwo(numParticles);
+
+    int numStages = static_cast<int>(std::log2(l2numparticles));
+
+    for (int stageIndex = 0; stageIndex < numStages; ++stageIndex) {
+        for (int stepIndex = 0; stepIndex <= stageIndex; ++stepIndex) {
+            int groupWidth = 1 << (stageIndex - stepIndex);
+            int groupHeight = 2 * groupWidth - 1;
+            glUniform1i(1, groupWidth);
+            glUniform1i(2, groupHeight);
+            glUniform1i(3, stepIndex);
+
+            glDispatchCompute((l2numparticles / 2) / 4, 1, 1);
+        }
+    }
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+
+    glUseProgram(HashTableSource);
+    glUniform1i(0, numParticles);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+    glDispatchCompute(numParticles / 1024, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+
+}
+
+void NCL::CSC8503::SPH::UpdateDensityandPressureGridGPU()
+{
+    glUseProgram(updateDensityPressureSource);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+
+    glUniform1f(0, smoothingRadius);
+    glUniform1i(1, hashX);
+    glUniform1i(2, hashY);
+    glUniform1i(3, hashZ);
+    glUniform1f(4, mass);
+    glUniform1f(5, SmoothingKernelMultiplier);
+    glUniform1f(6, targetDensity);
+    glUniform1f(7, pressureMultiplier);
+
+    int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
+
+    glDispatchCompute(dispatchsize, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+
+}
+
+void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
+{
+    glUseProgram(updatePressureAccelerationSource);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+
+    glUniform1f(0, smoothingRadius);
+    glUniform1i(1, hashX);
+    glUniform1i(2, hashY);
+    glUniform1i(3, hashZ);
+    glUniform1f(4, mass);
+    glUniform1f(5, SmoothingKernelMultiplier);
+    glUniform1f(6, viscosityMultiplier);
+
+    int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
+
+    glDispatchCompute(dispatchsize, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    //glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
+}
+
+void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
+{
+    glUseProgram(updateParticlesSource);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, postitionBuffer);
+
+    glUniform1i(0, fence.left);
+    glUniform1i(1, fence.right);
+    glUniform1i(2, fence.bottom);
+    glUniform1i(3, fence.top);
+    glUniform1i(4, fence.front);
+    glUniform1i(5, fence.back);
+    glUniform1f(6, dt);
+    glUniform1i(7, gravityEnabled ? 1 : 0);
+    glUniform3fv(8, 1, &gravity[0]);
+    glUniform1f(9, particleRadius);
+    glUniform1f(10, dampingRate);
+
+    int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
+
+    glDispatchCompute(dispatchsize, 1, 1);
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    /*glBindBuffer(GL_SHADER_STORAGE_BUFFER, postitionBuffer);
+    Vector4* mappedPosList = static_cast<Vector4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Vector4), GL_MAP_READ_BIT));
+
+    std::for_each(std::execution::par_unseq, mappedPosList, mappedPosList + numParticles, [&, this, mappedPosList](const Vector4& p) {
+        std::size_t index = &p - mappedPosList;
+        PosList[index] = Vector3(mappedPosList[index]);
+        });
+
+
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);*/
+
+    glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
+
+    std::for_each(std::execution::par_unseq,
+        particles.begin(), particles.end(), [&](const Particle& p) {
+            int i = &p - &(particles[0]);
+            PosList[i] = particles[i].Position;
+        });
+}

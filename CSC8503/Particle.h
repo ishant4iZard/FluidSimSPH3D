@@ -7,17 +7,23 @@ namespace NCL {
 		class Particle {
 		public:
 			Vector3 Position				= Vector3();
+			int padding1 = 0;
 			Vector3 PredictedPosition		= Vector3();
+			int padding2 = 0;
 			Vector3 Velocity				= Vector3();
+			int padding3 = 0;
 			Vector3 PressureAcceleration	= Vector3();
-			Vector3 Force					= Vector3();
-			Vector3 Acceleration			= Vector3();
+			
+
 
 			float density	= 0;
 			float pressure	= 0;
 
-			Vector3 GridPos = Vector3();
-			int Gridhash;
+
+			unsigned int Gridhash = INT_MAX;
+			int padding7 = 0;
+			int padding8 = 0;
+
 
 		};
 

@@ -1,0 +1,77 @@
+#version 430
+
+struct Particle {
+    vec3 Position;
+    vec3 PredictedPosition;
+    vec3 Velocity;
+    vec3 PressureAcceleration;
+
+    float density;
+    float pressure;
+
+    uint Gridhash;
+};
+
+layout(std430, binding = 0) buffer ParticleBuffer {
+    Particle particles[];
+};
+
+layout(std430, binding = 1) buffer HashLookupTable {
+    int hashLookupTable[];
+};
+
+layout(local_size_x = 1024) in;
+
+layout(location = 0) uniform float gridSize;
+layout(location = 1) uniform int hashfunctionX;
+layout(location = 2) uniform int hashfunctionY;
+layout(location = 3) uniform int hashfunctionZ;
+layout(location = 4) uniform float mass;
+layout(location = 5) uniform float smoothingKernelMultiplier;
+layout(location = 6) uniform float idealDensity;
+layout(location = 7) uniform float pressureMultipler;
+
+
+uint calcHash(ivec3 gridpos){
+    return (uint((gridpos.x * hashfunctionX) + (gridpos.y * hashfunctionY) + (gridpos.z * hashfunctionZ)) % particles.length());
+}
+
+float smoothingKernel(float h, float r) {
+    if(r>h) return 0.0;
+
+    return smoothingKernelMultiplier * pow(((h - r) / 100.0f), 2);
+}
+
+float convertDensityToPressure(float density){
+    return (density - idealDensity) * pressureMultipler;
+}
+
+void main() {
+    uint index = gl_GlobalInvocationID.x;
+    if (index >= particles.length()) return;
+
+    ivec3 gridpos = ivec3 (particles[index].PredictedPosition.xyz / gridSize);
+
+    float density = 0;
+
+    for (int ix = -1; ix <= 1; ix++) {
+        for (int iy = -1; iy <= 1; iy++) {
+            for (int iz = -1; iz <= 1; iz++) {
+                ivec3 neighborGridPos = ivec3(gridpos) + ivec3(ix, iy, iz);
+                uint key = calcHash(neighborGridPos);
+                int startIndex = hashLookupTable[key];
+                for (int i = startIndex; i < particles.length(); i++) {
+                    if (key != particles[i].Gridhash) break;
+
+                    float distance = length(particles[i].PredictedPosition - particles[index].PredictedPosition);
+                    float influence = smoothingKernel(gridSize, distance);
+                    density += mass * influence;
+                }
+            }
+        }
+    }
+
+    particles[index].density = density;
+    particles[index].pressure = convertDensityToPressure(density);
+
+}

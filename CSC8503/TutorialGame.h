@@ -50,11 +50,7 @@ namespace NCL {
 			Shader*		basicShader = nullptr;
 			Shader*		instancedParticleShader = nullptr;
 
-			GLuint setParticlesInGridsSource;
-			GLuint parallelSortSource;
-			GLuint updateDensityPressureSource;
-			GLuint updatePressureAccelerationSource;
-			GLuint updateParticlesSource;
+			
 			
 			void InitDefaultFloor();
 			Vector3* positionList;

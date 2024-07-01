@@ -12,7 +12,7 @@ using namespace CSC8503;
 #include <sstream>
 
 int main() {
-	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", 1280, 720 , false);
+	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", 1920, 1080 , false);
 
 	if (!w->HasInitialised()) {
 		return -1;

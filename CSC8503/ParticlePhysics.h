@@ -1,13 +1,14 @@
 #pragma once
 #include "Particle.h"
 #include <execution>
+#include "GameTechRenderer.h"
 
 #define PI 3.14159f
 
 struct boundingArea {
 	int left = 0;
-	int right = 120;
-	int bottom = 450;
+	int right = 480;
+	int bottom = 900;
 	int top = 0;
 	int front = 0;
 	int back = 250;
@@ -21,7 +22,7 @@ namespace NCL {
 		private:
 
 #pragma region particles
-			Particle* particles;
+			std::vector<Particle> particles;
 
 			int numParticles;
 			float particleRadius;
@@ -35,7 +36,7 @@ namespace NCL {
 			int NoGridsX;
 			int NoGridsY;
 			int NoGridsZ;
-			int* hashLookupTable;
+			std::vector<int> hashLookupTable;
 
 			boundingArea fence;
 
@@ -51,7 +52,7 @@ namespace NCL {
 			const unsigned int hashZ = 440817757;
 
 
-			Vector3 offsetsGrids[27] = {
+			/*Vector3 offsetsGrids[27] = {
 				Vector3(0,0,0),
 				Vector3(0,0,1),
 				Vector3(0,0,-1),
@@ -79,7 +80,7 @@ namespace NCL {
 				Vector3(-1,-1,0),
 				Vector3(-1,-1,1),
 				Vector3(-1,-1,-1)
-			};
+			};*/
 
 #pragma region HelperFunctionsAndConstants
 			double SmoothingKernelMultiplier;
@@ -115,16 +116,21 @@ namespace NCL {
 			}
 
 			void resetHashLookupTable() {
-				std::fill(std::execution::par, hashLookupTable, hashLookupTable + numParticles, INT_MAX);
+				std::fill(std::execution::par, hashLookupTable.begin(), hashLookupTable.end(), INT_MAX);
 			}
+
+			int NextPowerOfTwo(int n) {
+				return pow(2, ceil(log2(n)));
+			}
+
 #pragma endregion
 
 			void randomPositionStart();
 			void GridStart(Vector3* PosList);
 
 
-			double calcDensityGrid(int particleIndex, Vector3 gridPos);
-			Vector3 calcPressureForceGrid(int particleIndex, Vector3 gridPos);
+			double calcDensityGrid(int particleIndex, Vector3i gridPos);
+			Vector3 calcPressureForceGrid(int particleIndex, Vector3i gridPos);
 
 
 			void SetParticlesInGridsHashing();
@@ -132,10 +138,29 @@ namespace NCL {
 			void UpdatePressureAccelerationGrid();
 			void updateParticle(float dt, Vector3* PosList);
 
+			void SetParticlesInGridsHashingGPU();
+			void UpdateDensityandPressureGridGPU();
+			void UpdatePressureAccelerationGridGPU();
+			void updateParticleGPU(float dt, Vector3* PosList);
+
+
+			GLuint particleBuffer;
+			GLuint hashLookupBuffer;
+			GLuint postitionBuffer;
+
+			int local_size_x;
+
 		public:
 
 			SPH(int inNumParticles, Vector3* PosList);
 			~SPH();
+
+			GLuint setParticlesInGridsSource;
+			GLuint parallelSortSource;
+			GLuint HashTableSource;
+			GLuint updateDensityPressureSource;
+			GLuint updatePressureAccelerationSource;
+			GLuint updateParticlesSource;
 
 			void Update(float dt, Vector3* PosList);
 		};

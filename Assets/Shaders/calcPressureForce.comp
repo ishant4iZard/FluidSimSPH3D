@@ -1,0 +1,88 @@
+#version 430
+
+struct Particle {
+    vec3 Position;
+    vec3 PredictedPosition;
+    vec3 Velocity;
+    vec3 PressureAcceleration;
+
+    float density;
+    float pressure;
+
+    uint Gridhash;
+};
+
+layout(std430, binding = 0) buffer ParticleBuffer {
+    Particle particles[];
+};
+
+layout(std430, binding = 1) buffer HashLookupTable {
+    int hashLookupTable[];
+};
+
+layout(local_size_x = 1024) in;
+
+layout(location = 0) uniform float gridSize;
+layout(location = 1) uniform int hashfunctionX;
+layout(location = 2) uniform int hashfunctionY;
+layout(location = 3) uniform int hashfunctionZ;
+layout(location = 4) uniform float mass;
+layout(location = 5) uniform float smoothingKernelDerivativeMultiplier;
+layout(location = 6) uniform float viscosityMultiplier;
+
+
+uint calcHash(ivec3 gridpos){
+    return (uint((gridpos.x * hashfunctionX) + (gridpos.y * hashfunctionY) + (gridpos.z * hashfunctionZ)) % particles.length());
+}
+
+float smoothingKernelDerivative(float h, float r) {
+    if(r>h) return 0.0;
+
+    return smoothingKernelDerivativeMultiplier * ((r - h) / 100.0f);
+}
+
+vec3 getRandomDir() {
+    return vec3(1, 0, 0);
+}
+
+void main() {
+    uint index = gl_GlobalInvocationID.x;
+    if (index >= particles.length()) return;
+
+    ivec3 gridpos = ivec3 (particles[index].PredictedPosition.xyz / gridSize);
+
+   vec3 pressureForce = vec3(0.0);
+
+    for (int ix = -1; ix <= 1; ix++) {
+        for (int iy = -1; iy <= 1; iy++) {
+            for (int iz = -1; iz <= 1; iz++) {
+                ivec3 neighborGridPos = ivec3(gridpos) + ivec3(ix, iy, iz);
+                uint key = calcHash(neighborGridPos);
+                int startIndex = hashLookupTable[key];
+                for (int i = startIndex; i < particles.length(); i++) {
+                    if (key != particles[i].Gridhash) break;
+                    if(index == i) continue;
+
+                    vec3 offsetVec = particles[i].PredictedPosition - particles[index].PredictedPosition;
+                    float distance = length(offsetVec);
+
+                    vec3 dir = distance == 0.0 ? getRandomDir() : offsetVec / distance;
+
+                    if (distance > gridSize) continue;
+
+                    float kernelDerivative = smoothingKernelDerivative(gridSize, distance);
+                    float neighborDensity = particles[i].density;
+                    float sharedPressure = (particles[i].pressure + particles[index].pressure) / 2.0;
+                    pressureForce += dir * (sharedPressure * kernelDerivative * mass / neighborDensity);
+
+                    // Add viscosity
+                    vec3 velocityDiff = particles[i].Velocity - particles[index].Velocity;
+                    pressureForce += velocityDiff * viscosityMultiplier * (-kernelDerivative / (neighborDensity * 100.0));
+                }
+            }
+        }
+    }
+
+    particles[index].PressureAcceleration = pressureForce/mass;
+
+}

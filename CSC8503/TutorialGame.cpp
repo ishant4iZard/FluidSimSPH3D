@@ -66,7 +66,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(4, "YLook");
 
 	
-	numParticles = 50000;
+	numParticles = 500000;
 	positionList = new Vector3[numParticles];
 	
 	water = new SPH(numParticles, positionList);
@@ -75,26 +75,6 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	InitDefaultFloor();
 
-	std::vector<float> A = { 1.0f, 2.0f, 3.0f, 4.0f };
-	std::vector<float> B = { 5.0f, 6.0f, 7.0f, 8.0f };
-	std::vector<float> C(A.size());
-
-	GLuint ssboA, ssboB, ssboC;
-	setupBuffers(A, B, ssboA, ssboB, ssboC);
-
-	dispatchComputeShader(setParticlesInGridsSource, A.size());
-
-	getResults(ssboC, C);
-
-	// Print results
-	for (size_t i = 0; i < C.size(); ++i) {
-		std::cout << "C[" << i << "] = " << C[i] << std::endl;
-	}
-
-	// Cleanup
-	glDeleteBuffers(1, &ssboA);
-	glDeleteBuffers(1, &ssboB);
-	glDeleteBuffers(1, &ssboC);
 	
 }
 
@@ -127,7 +107,12 @@ void NCL::CSC8503::TutorialGame::InitComputeShaders()
 	updatePressureAccelerationSource =	CompileComputeShader("updatePressureAcceleration.comp");
 	updateParticlesSource =				CompileComputeShader("updateParticles.comp");*/
 
-	setParticlesInGridsSource = CompileComputeShader("AddNumbers.comp");
+	water->setParticlesInGridsSource= CompileComputeShader("setParticlesInGrids.comp"); 
+	water->parallelSortSource = CompileComputeShader("SortParticles.comp");
+	water->HashTableSource = CompileComputeShader("HashLookupTable.comp");
+	water->updateDensityPressureSource = CompileComputeShader("calcDensityandPressure.comp");
+	water->updatePressureAccelerationSource = CompileComputeShader("calcPressureForce.comp");
+	water->updateParticlesSource = CompileComputeShader("UpdateParticles.comp");
 }
 
 GLuint TutorialGame::CompileComputeShader(const std::string& filename)
@@ -175,6 +160,10 @@ GLuint TutorialGame::CompileComputeShader(const std::string& filename)
 		glDeleteProgram(programID);
 		return 0;
 	}
+	else
+	{
+		std::cout << " shader " << " Loaded!" << "\n";
+	}
 
 
 	return programID;
@@ -200,6 +189,9 @@ void TutorialGame::UpdateGame(float dt) {
 
 	auto start_time
 		= std::chrono::high_resolution_clock::now();
+
+	GLuint positionListBuffer = ((OGLMesh*)(ParticleObject->GetRenderObject()->GetMesh()))->getInstancebuffer();
+
 
 	water->Update(dt, positionList);
 
