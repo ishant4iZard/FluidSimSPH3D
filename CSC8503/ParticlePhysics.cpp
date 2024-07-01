@@ -42,10 +42,8 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
 
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
 
-    glGenBuffers(1, &postitionBuffer);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, postitionBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(Vector4), nullptr, GL_STATIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, postitionBuffer);
+
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Particle), particles.data());
 
     //local_size_x = 256;
 }
@@ -331,8 +329,6 @@ void SPH::SetParticlesInGridsHashing()
 void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
 {
     glUseProgram(setParticlesInGridsSource);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleBuffer);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0 ,particles.size() * sizeof(Particle), particles.data());
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
     glUniform1f(0, smoothingRadius);
     glUniform1i(1, hashX);
@@ -370,7 +366,7 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
-    glDispatchCompute(numParticles / 1024, 1, 1);
+    glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 
@@ -445,7 +441,7 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
+    //glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
 
     std::for_each(std::execution::par_unseq,
         particles.begin(), particles.end(), [&](const Particle& p) {

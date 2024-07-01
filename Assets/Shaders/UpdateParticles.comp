@@ -27,10 +27,6 @@ layout(std430, binding = 0) buffer ParticleBuffer {
     Particle particles[];
 };
 
-layout(std430, binding = 4) buffer PosListBuffer{
-    vec3 Positions[];
-};
-
 layout(local_size_x = 1024) in;
 
 layout(location = 0) uniform Fence fence;
@@ -73,8 +69,6 @@ void main() {
         particles[index].Position.z = fence.front+ (0.0001f + particleRadius);
         particles[index].Velocity.z = -particles[index].Velocity.z * dampingRate;
     }
-
-    Positions[index] = particles[index].Position;
 
     particles[index].PredictedPosition = particles[index].Position + particles[index].Velocity * (1 / 30.0f) + (gravity) * 0.5f * (1 / 30.0f) * (1 / 30.0f);
 
