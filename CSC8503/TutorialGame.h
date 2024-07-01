@@ -60,7 +60,7 @@ namespace NCL {
 			SPH* water;
 			unsigned int numParticles;
 
-			GLuint particleBuffer;
+
 			
 		private:
 
