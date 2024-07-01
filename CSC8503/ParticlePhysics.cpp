@@ -420,7 +420,6 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    //glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
 }
 
 void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
@@ -445,17 +444,6 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
 
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-    /*glBindBuffer(GL_SHADER_STORAGE_BUFFER, postitionBuffer);
-    Vector4* mappedPosList = static_cast<Vector4*>(glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Vector4), GL_MAP_READ_BIT));
-
-    std::for_each(std::execution::par_unseq, mappedPosList, mappedPosList + numParticles, [&, this, mappedPosList](const Vector4& p) {
-        std::size_t index = &p - mappedPosList;
-        PosList[index] = Vector3(mappedPosList[index]);
-        });
-
-
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);*/
 
     glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
 

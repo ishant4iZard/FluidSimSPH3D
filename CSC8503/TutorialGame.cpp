@@ -190,9 +190,6 @@ void TutorialGame::UpdateGame(float dt) {
 	auto start_time
 		= std::chrono::high_resolution_clock::now();
 
-	GLuint positionListBuffer = ((OGLMesh*)(ParticleObject->GetRenderObject()->GetMesh()))->getInstancebuffer();
-
-
 	water->Update(dt, positionList);
 
 	auto physics_end_time

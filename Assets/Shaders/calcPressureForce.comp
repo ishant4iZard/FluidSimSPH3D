@@ -41,9 +41,6 @@ float smoothingKernelDerivative(float h, float r) {
     return smoothingKernelDerivativeMultiplier * ((r - h) / 100.0f);
 }
 
-vec3 getRandomDir() {
-    return vec3(1, 0, 0);
-}
 
 void main() {
     uint index = gl_GlobalInvocationID.x;
@@ -66,7 +63,7 @@ void main() {
                     vec3 offsetVec = particles[i].PredictedPosition - particles[index].PredictedPosition;
                     float distance = length(offsetVec);
 
-                    vec3 dir = distance == 0.0 ? getRandomDir() : offsetVec / distance;
+                    vec3 dir = distance == 0.0 ? normalize(particles[i].Position - particles[i-1].Position) : offsetVec / distance;
 
                     if (distance > gridSize) continue;
 
