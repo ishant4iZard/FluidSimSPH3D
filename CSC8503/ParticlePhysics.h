@@ -33,9 +33,6 @@ namespace NCL {
 
 #pragma endregion
 
-			int NoGridsX;
-			int NoGridsY;
-			int NoGridsZ;
 			std::vector<int> hashLookupTable;
 
 			boundingArea fence;
@@ -163,6 +160,8 @@ namespace NCL {
 			GLuint updateParticlesSource;
 
 			void Update(float dt, Vector3* PosList);
+
+			GLuint getParticleBuffer() { return particleBuffer; };
 		};
 	}
 }

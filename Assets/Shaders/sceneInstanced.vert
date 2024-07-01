@@ -1,4 +1,18 @@
-#version 400 core
+#version 430 core
+
+struct Particle {
+    vec3 Position;
+    vec3 PredictedPosition;
+    vec3 Velocity;
+    vec3 PressureAcceleration;
+
+    float density;
+    float pressure;
+
+    uint Gridhash;
+};
+
+
 
 uniform mat4 modelMatrix 	= mat4(1.0f);
 uniform mat4 viewMatrix 	= mat4(1.0f);
@@ -10,6 +24,10 @@ layout(location = 1) in vec4 colour;
 layout(location = 2) in vec2 texCoord;
 layout(location = 3) in vec3 normal;
 layout(location = 7) in vec3 instancedParticlePosition;
+
+layout(std430, binding = 0) buffer ParticleBuffer {
+    Particle particles[];
+};
 
 uniform vec4 		objectColour = vec4(1,1,1,1);
 
@@ -34,7 +52,9 @@ mat4 UpdateModelMatrixPosition(mat4 modelMatrix, vec3 newPosition) {
 
 void main(void)
 {
-	mat4 newModelMatrix = UpdateModelMatrixPosition(modelMatrix, instancedParticlePosition);
+	uint index = gl_InstanceID;
+
+	mat4 newModelMatrix = UpdateModelMatrixPosition(modelMatrix, particles[index].Position);
 
 	mat4 mvp 		  = (projMatrix * viewMatrix * newModelMatrix);
 	mat3 normalMatrix = transpose ( inverse ( mat3 ( newModelMatrix )));

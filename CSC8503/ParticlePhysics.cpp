@@ -18,10 +18,6 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
     SmoothingKernelMultiplier = 5 * (6 / (PI * pow(smoothingRadius / 100, 4)));
     SmoothingKernelDerivativeMultiplier = 5 * (12 / (PI * pow(smoothingRadius / 100, 4)));
 
-    NoGridsX = (fence.right - fence.left / smoothingRadius) + 1;
-    NoGridsY = (fence.bottom - fence.top / smoothingRadius) + 1;
-    NoGridsZ = (fence.back - fence.front / smoothingRadius) + 1;
-
 
     hashLookupTable = std::vector<int>(numParticles, INT_MAX);
     resetHashLookupTable();
@@ -31,19 +27,17 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
 
     glGenBuffers(1, &particleBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, particles.size() * sizeof(Particle), particles.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, particles.size() * sizeof(Particle), particles.data(), GL_DYNAMIC_DRAW);
 
-    // Create sortedBuffer without initializing data (just allocate space)
     glGenBuffers(1, &hashLookupBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, hashLookupBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(int), hashLookupTable.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(int), hashLookupTable.data(), GL_DYNAMIC_COPY);
 
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
 
-
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Particle), particles.data());
+    if (local_size_x > 1024) local_size_x = 1024;
 
     //local_size_x = 256;
 }
@@ -329,7 +323,7 @@ void SPH::SetParticlesInGridsHashing()
 void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
 {
     glUseProgram(setParticlesInGridsSource);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
     glUniform1f(0, smoothingRadius);
     glUniform1i(1, hashX);
     glUniform1i(2, hashY);
@@ -355,7 +349,7 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
             glUniform1i(2, groupHeight);
             glUniform1i(3, stepIndex);
 
-            glDispatchCompute((l2numparticles / 2) / 4, 1, 1);
+            glDispatchCompute((l2numparticles / 2) / 128, 1, 1);
         }
     }
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -363,9 +357,9 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
 
     glUseProgram(HashTableSource);
     glUniform1i(0, numParticles);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
@@ -376,8 +370,8 @@ void NCL::CSC8503::SPH::UpdateDensityandPressureGridGPU()
 {
     glUseProgram(updateDensityPressureSource);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+    /*glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);*/
 
     glUniform1f(0, smoothingRadius);
     glUniform1i(1, hashX);
@@ -400,8 +394,8 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
 {
     glUseProgram(updatePressureAccelerationSource);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+    /*glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);*/
 
     glUniform1f(0, smoothingRadius);
     glUniform1i(1, hashX);
@@ -421,8 +415,7 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
 void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
 {
     glUseProgram(updateParticlesSource);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, postitionBuffer);
+    /*glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);*/
 
     glUniform1i(0, fence.left);
     glUniform1i(1, fence.right);
@@ -441,11 +434,11 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
+    /*glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
 
     std::for_each(std::execution::par_unseq,
         particles.begin(), particles.end(), [&](const Particle& p) {
             int i = &p - &(particles[0]);
             PosList[i] = particles[i].Position;
-        });
+        });*/
 }

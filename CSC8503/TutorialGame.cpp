@@ -66,7 +66,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(4, "YLook");
 
 	
-	numParticles = 500000;
+	numParticles = 100000;
 	positionList = new Vector3[numParticles];
 	
 	water = new SPH(numParticles, positionList);
@@ -75,7 +75,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	InitDefaultFloor();
 
-	
+	particleBuffer = water->getParticleBuffer();
 }
 
 
