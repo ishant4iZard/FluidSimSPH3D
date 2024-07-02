@@ -1,4 +1,4 @@
-#version 400 core
+#version 430 core
 
 uniform mat4 modelMatrix 	= mat4(1.0f);
 uniform mat4 viewMatrix 	= mat4(1.0f);

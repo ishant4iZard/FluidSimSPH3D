@@ -1,4 +1,4 @@
-#version 400 core
+#version 430 core
 
 uniform vec4 		objectColour;
 uniform sampler2D 	mainTex;
