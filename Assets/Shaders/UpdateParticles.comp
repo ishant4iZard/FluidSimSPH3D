@@ -14,18 +14,18 @@ struct Particle {
 
 struct Fence {
     int left;
-	int right;
-	int bottom;
-	int top;
-	int front;
-	int back;
+    int right;
+    int bottom;
+    int top;
+    int front;
+    int back;
 };
 
 layout(std430, binding = 0) buffer ParticleBuffer {
     Particle particles[];
 };
 
-layout(local_size_x = 1024) in;
+layout(local_size_x = 704) in;
 
 layout(location = 0) uniform Fence fence;
 layout(location = 6) uniform float dt;
@@ -38,41 +38,50 @@ void main() {
     uint index = gl_GlobalInvocationID.x;
     if (index >= particles.length()) return;
 
-    particles[index].Velocity += particles[index].PressureAcceleration * dt;
-    if (gravityEnabled){
-        particles[index].Velocity += gravity * dt;
-    }
-    particles[index].Position += particles[index].Velocity * dt;
-    if (particles[index].Position.y >= fence.bottom - particleRadius) {
-        particles[index].Position.y = fence.bottom - (0.0001f + particleRadius);
-        particles[index].Velocity.y = -particles[index].Velocity.y * dampingRate;
-    }
-    if (particles[index].Position.y <= fence.top + particleRadius ) {
-        particles[index].Position.y = fence.top + (0.0001f + particleRadius);
-        particles[index].Velocity.y = -particles[index].Velocity.y * dampingRate;
-    }
-    if (particles[index].Position.x >= fence.right - particleRadius) {
-        particles[index].Position.x = fence.right - (0.0001f + particleRadius);
-        particles[index].Velocity.x = -particles[index].Velocity.x * dampingRate;
-    }
-    if (particles[index].Position.x <= fence.left + particleRadius ) {
-        particles[index].Position.x = fence.left + (0.0001f + particleRadius);
-        particles[index].Velocity.x = -particles[index].Velocity.x * dampingRate;
-    }
-    if (particles[index].Position.z >= fence.back - particleRadius ) {
-        particles[index].Position.z = fence.back - (0.0001f + particleRadius);
-        particles[index].Velocity.z = -particles[index].Velocity.z * dampingRate;
-    }
-    if (particles[index].Position.z <= fence.front + particleRadius ) {
-        particles[index].Position.z = fence.front+ (0.0001f + particleRadius);
-        particles[index].Velocity.z = -particles[index].Velocity.z * dampingRate;
+    Particle p = particles[index];
+
+    vec3 velocity = p.Velocity + p.PressureAcceleration * dt;
+    if (gravityEnabled) {
+        velocity += gravity * dt;
     }
 
-    particles[index].PredictedPosition = particles[index].Position + particles[index].Velocity * (1 / 120.0f) + (gravity) * 0.5f * (1 / 120.0f) * (1 / 120.0f);
+    vec3 position = p.Position + velocity * dt;
 
-    particles[index].PredictedPosition.x = clamp(particles[index].PredictedPosition.x, float(fence.left), float(fence.right));
-    particles[index].PredictedPosition.y = clamp(particles[index].PredictedPosition.y, float(fence.top), float(fence.bottom));
-    particles[index].PredictedPosition.z = clamp(particles[index].PredictedPosition.z, float(fence.front), float(fence.back));
+    float radiusOffset = 0.0001f + particleRadius;
 
+    if (position.y >= fence.bottom - particleRadius) {
+        position.y = fence.bottom - radiusOffset;
+        velocity.y = -velocity.y * dampingRate;
+    }
+    if (position.y <= fence.top + particleRadius) {
+        position.y = fence.top + radiusOffset;
+        velocity.y = -velocity.y * dampingRate;
+    }
+    if (position.x >= fence.right - particleRadius) {
+        position.x = fence.right - radiusOffset;
+        velocity.x = -velocity.x * dampingRate;
+    }
+    if (position.x <= fence.left + particleRadius) {
+        position.x = fence.left + radiusOffset;
+        velocity.x = -velocity.x * dampingRate;
+    }
+    if (position.z >= fence.back - particleRadius) {
+        position.z = fence.back - radiusOffset;
+        velocity.z = -velocity.z * dampingRate;
+    }
+    if (position.z <= fence.front + particleRadius) {
+        position.z = fence.front + radiusOffset;
+        velocity.z = -velocity.z * dampingRate;
+    }
 
+    float predictionTimestep = 1 / 120.0f;
+
+    vec3 predictedPosition = position + velocity * predictionTimestep + gravity * 0.5f * (predictionTimestep * predictionTimestep);
+
+    particles[index].Velocity = velocity;
+    particles[index].Position = position;
+
+    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left), float(fence.right));
+    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.top), float(fence.bottom));
+    particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front), float(fence.back));
 }

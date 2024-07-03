@@ -41,7 +41,7 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
 
     //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Particle), particles.data());
 
-    if (local_size_x > 1024)local_size_x = 1024;
+    if (local_size_x > 704)local_size_x = 704;
     //local_size_x = 256;
 }
 
