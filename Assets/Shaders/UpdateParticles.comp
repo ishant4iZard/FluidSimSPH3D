@@ -68,7 +68,7 @@ void main() {
         particles[index].Velocity.z = -particles[index].Velocity.z * dampingRate;
     }
 
-    particles[index].PredictedPosition = particles[index].Position + particles[index].Velocity * (1 / 30.0f) + (gravity) * 0.5f * (1 / 30.0f) * (1 / 30.0f);
+    particles[index].PredictedPosition = particles[index].Position + particles[index].Velocity * (1 / 120.0f) + (gravity) * 0.5f * (1 / 120.0f) * (1 / 120.0f);
 
     particles[index].PredictedPosition.x = clamp(particles[index].PredictedPosition.x, float(fence.left), float(fence.right));
     particles[index].PredictedPosition.y = clamp(particles[index].PredictedPosition.y, float(fence.top), float(fence.bottom));

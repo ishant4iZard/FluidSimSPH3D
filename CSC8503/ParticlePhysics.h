@@ -1,7 +1,7 @@
 #pragma once
+#include "GameTechRenderer.h"
 #include "Particle.h"
 #include <execution>
-#include "GameTechRenderer.h"
 
 #define PI 3.14159f
 

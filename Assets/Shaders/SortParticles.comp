@@ -21,7 +21,7 @@ layout(location = 1) uniform int groupWidth;
 layout(location = 2) uniform int groupHeight;
 layout(location = 3) uniform int stepIndex;
 
-layout(local_size_x = 4) in;
+layout(local_size_x = 16) in;
 
 void main() {
     uint i = gl_GlobalInvocationID.x;

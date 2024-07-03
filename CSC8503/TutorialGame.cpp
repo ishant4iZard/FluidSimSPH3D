@@ -66,7 +66,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(4, "YLook");
 
 	
-	numParticles = 500000;
+	numParticles = 1000000;
 	positionList = new Vector3[numParticles];
 	
 	water = new SPH(numParticles, positionList);
@@ -92,7 +92,7 @@ for this module, even in the coursework, but you can add it if you like!
 
 */
 void TutorialGame::InitialiseAssets() {
-	sphereMesh	= renderer->LoadMesh("sphere.msh");
+	sphereMesh	= renderer->LoadMesh("Cube.msh");
 
 	basicTex	= renderer->LoadTexture("checkerboard.png");
 	sandTex		= renderer->LoadTexture("sand.jpg");
