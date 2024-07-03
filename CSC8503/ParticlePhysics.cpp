@@ -40,8 +40,9 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
 
 
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Particle), particles.data());
+    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, numParticles * sizeof(Particle), particles.data());
 
+    if (local_size_x > 1024)local_size_x = 1024;
     //local_size_x = 256;
 }
 
@@ -55,23 +56,28 @@ void::SPH::Update(float dt, Vector3* PosList) {
     auto start_time
         = std::chrono::high_resolution_clock::now();
 
+    //SetParticlesInGridsHashing();
     SetParticlesInGridsHashingGPU();
     auto SetParticlesInGridsHashing_end_time
         = std::chrono::high_resolution_clock::now();
 
+    //UpdateDensityandPressureGrid();
     UpdateDensityandPressureGridGPU();
     auto UpdateDensityandPressureGrid_end_time
         = std::chrono::high_resolution_clock::now();
 
+    //UpdatePressureAccelerationGrid();
     UpdatePressureAccelerationGridGPU();
     auto UpdatePressureAccelerationGrid_end_time
         = std::chrono::high_resolution_clock::now();
 
+    //updateParticle(dt, PosList);
     updateParticleGPU(dt, PosList);
     auto updateParticle_end_time
         = std::chrono::high_resolution_clock::now();
 
-    resetHashLookupTable();
+    resetHashLookupTableGPU();
+    //resetHashLookupTableGPU();
     auto resetHashLookupTable_end_time
         = std::chrono::high_resolution_clock::now();
 
@@ -333,7 +339,7 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
     glUniform1i(3, hashZ);
     int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
     glDispatchCompute(dispatchsize, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
 
@@ -352,10 +358,10 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
             glUniform1i(2, groupHeight);
             glUniform1i(3, stepIndex);
 
-            glDispatchCompute((l2numparticles / 2) / 4, 1, 1);
+            glDispatchCompute((l2numparticles / 2) + 1023 / 1024, 1, 1);
         }
     }
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
     glUseProgram(HashTableSource);
@@ -364,7 +370,7 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
     glDispatchCompute(dispatchsize, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
 }
@@ -388,7 +394,7 @@ void NCL::CSC8503::SPH::UpdateDensityandPressureGridGPU()
     int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
 
     glDispatchCompute(dispatchsize, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
 }
@@ -411,7 +417,8 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
     int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
 
     glDispatchCompute(dispatchsize, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
 
 }
 
@@ -419,7 +426,6 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
 {
     glUseProgram(updateParticlesSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, postitionBuffer);
 
     glUniform1i(0, fence.left);
     glUniform1i(1, fence.right);
@@ -436,7 +442,7 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
     int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
 
     glDispatchCompute(dispatchsize, 1, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     /*glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
 
@@ -445,4 +451,18 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
             int i = &p - &(particles[0]);
             PosList[i] = particles[i].Position;
         });*/
+}
+
+void NCL::CSC8503::SPH::resetHashLookupTableGPU()
+{
+    glUseProgram(resetHashTableSource);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+    glUniform1i(0, numParticles);
+
+    int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
+
+    glDispatchCompute(dispatchsize, 1, 1);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
 }

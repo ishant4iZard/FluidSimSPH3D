@@ -306,7 +306,7 @@ void NCL::CSC8503::GameTechRenderer::RenderInstancedRenderObject()
 
 		glUniform1i(hasTexLocation, (OGLTexture*)(*tempInstancedRenderObject).GetDefaultTexture() ?1 : 0);
 
-		
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ((OGLShader*)(tempInstancedRenderObject->GetShader()))->getParticleBuffer());
 
 		BindMesh((OGLMesh&)*(*tempInstancedRenderObject).GetMesh());
 		size_t layerCount = (*tempInstancedRenderObject).GetMesh()->GetSubMeshCount();

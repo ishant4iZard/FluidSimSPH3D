@@ -48,36 +48,6 @@ namespace NCL {
 			const unsigned int hashZ = 440817757;
 
 
-			/*Vector3 offsetsGrids[27] = {
-				Vector3(0,0,0),
-				Vector3(0,0,1),
-				Vector3(0,0,-1),
-				Vector3(0,1,0),
-				Vector3(0,1,1),
-				Vector3(0,1,-1),
-				Vector3(0,-1,0),
-				Vector3(0,-1,1),
-				Vector3(0,-1,-1),
-				Vector3(1,0,0),
-				Vector3(1,0,1),
-				Vector3(1,0,-1),
-				Vector3(1,1,0),
-				Vector3(1,1,1),
-				Vector3(1,1,-1),
-				Vector3(1,-1,0),
-				Vector3(1,-1,1),
-				Vector3(1,-1,-1),
-				Vector3(-1,0,0),
-				Vector3(-1,0,1),
-				Vector3(-1,0,-1),
-				Vector3(-1,1,0),
-				Vector3(-1,1,1),
-				Vector3(-1,1,-1),
-				Vector3(-1,-1,0),
-				Vector3(-1,-1,1),
-				Vector3(-1,-1,-1)
-			};*/
-
 #pragma region HelperFunctionsAndConstants
 			double SmoothingKernelMultiplier;
 			double SmoothingKernelDerivativeMultiplier;
@@ -138,6 +108,7 @@ namespace NCL {
 			void UpdateDensityandPressureGridGPU();
 			void UpdatePressureAccelerationGridGPU();
 			void updateParticleGPU(float dt, Vector3* PosList);
+			void resetHashLookupTableGPU();
 
 
 			GLuint particleBuffer;
@@ -157,6 +128,7 @@ namespace NCL {
 			GLuint updateDensityPressureSource;
 			GLuint updatePressureAccelerationSource;
 			GLuint updateParticlesSource;
+			GLuint resetHashTableSource;
 
 			void Update(float dt, Vector3* PosList);
 

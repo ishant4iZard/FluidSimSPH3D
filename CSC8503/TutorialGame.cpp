@@ -77,10 +77,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	particleBuffer = water->getparticleBuffer();
 	
-	OGLShader* shader = (OGLShader*)(ParticleObject->GetRenderObject()->GetShader());
-	glUseProgram(shader->GetProgramID());
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+	
 }
 
 
@@ -92,7 +89,8 @@ for this module, even in the coursework, but you can add it if you like!
 
 */
 void TutorialGame::InitialiseAssets() {
-	sphereMesh	= renderer->LoadMesh("sphere.msh");
+	sphereMesh	= renderer->LoadMesh("Cube.msh");
+	
 
 	basicTex	= renderer->LoadTexture("checkerboard.png");
 	sandTex		= renderer->LoadTexture("sand.jpg");
@@ -118,6 +116,7 @@ void NCL::CSC8503::TutorialGame::InitComputeShaders()
 	water->updateDensityPressureSource = CompileComputeShader("calcDensityandPressure.comp");
 	water->updatePressureAccelerationSource = CompileComputeShader("calcPressureForce.comp");
 	water->updateParticlesSource = CompileComputeShader("UpdateParticles.comp");
+	water->resetHashTableSource = CompileComputeShader("ResetHashLookupTable.comp");
 }
 
 GLuint TutorialGame::CompileComputeShader(const std::string& filename)
@@ -208,6 +207,9 @@ void TutorialGame::UpdateGame(float dt) {
 	//positionList[1000] = positionList[1000] + Vector3(0, 0, 1) * dt;
 
 	//ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, numParticles);
+
+	OGLShader* shader = (OGLShader*)(ParticleObject->GetRenderObject()->GetShader());
+	shader->setParticleBuffer(particleBuffer);
 
 	renderer->Update(dt);
 

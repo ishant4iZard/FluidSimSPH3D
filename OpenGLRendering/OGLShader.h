@@ -27,6 +27,14 @@ namespace NCL::Rendering {
 		int GetProgramID() const {
 			return programID;
 		}	
+
+		void setParticleBuffer(GLuint inParticleBuffer) {
+			ParticleBuffer = inParticleBuffer;
+		}
+
+		int getParticleBuffer() {
+			return ParticleBuffer;
+		}
 			
 		static void	PrintCompileLog(GLuint object);
 		static void	PrintLinkLog(GLuint program);
@@ -38,6 +46,7 @@ namespace NCL::Rendering {
 
 		GLuint	programID;
 		GLuint	shaderIDs[ShaderStages::MAX_SIZE];
+		GLuint  ParticleBuffer;
 		int		shaderValid[ShaderStages::MAX_SIZE];
 		int		programValid;
 	};
