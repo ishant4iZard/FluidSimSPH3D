@@ -5,7 +5,7 @@
 
 using namespace NCL::CSC8503;
 
-SPH::SPH(int inNumParticles, Vector3* PosList)
+SPH::SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld) :gameWorld(ingameWorld)
 {
     numParticles = inNumParticles;
     particles.resize(numParticles);
@@ -18,7 +18,13 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
     SmoothingKernelMultiplier = 5 * (6 / (PI * pow(smoothingRadius / 100, 4)));
     SmoothingKernelDerivativeMultiplier = 5 * (12 / (PI * pow(smoothingRadius / 100, 4)));
 
+    marchingCubesSize = 10.f;
 
+    marchingCubesNoGrids =  (fence.right - fence.left) / marchingCubesSize *
+                            (fence.bottom - fence.top) / marchingCubesSize *
+                            (fence.back - fence.front) / marchingCubesSize;
+
+    marchingCubesIsoLevel = 20;
 
     hashLookupTable = std::vector<int>(numParticles, INT_MAX);
     resetHashLookupTable();
@@ -37,18 +43,32 @@ SPH::SPH(int inNumParticles, Vector3* PosList)
     glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(int), hashLookupTable.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
 
+    glGenBuffers(1, &NeighbourParticlesBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, NeighbourParticlesBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, NeighbourParticlesBuffer);
+
+    glGenBuffers(1, &TriangleBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, TriangleBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(Vector4), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, TriangleBuffer);
+
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
 
     //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Particle), particles.data());
+    int localsizebest = ((int)sqrt(numParticles) / 32) * 32;
 
-    if (local_size_x > 704)local_size_x = 704;
+    if (local_size_x > localsizebest)local_size_x = localsizebest;
     //local_size_x = 256;
+
 }
 
 SPH::~SPH()
 {
     //delete hashLookupTable;
     //delete[]particles;
+
+   
 }
 
 void::SPH::Update(float dt, Vector3* PosList) {
@@ -56,7 +76,14 @@ void::SPH::Update(float dt, Vector3* PosList) {
         = std::chrono::high_resolution_clock::now();
 
     //SetParticlesInGridsHashing();
-    SetParticlesInGridsHashingGPU();
+    if (nextHashingFrame == 0) {
+        SetParticlesInGridsHashingGPU();
+        nextHashingFrame = hashEveryNFrame;
+    }
+    else {
+        nextHashingFrame--;
+    }
+
     auto SetParticlesInGridsHashing_end_time
         = std::chrono::high_resolution_clock::now();
 
@@ -75,10 +102,6 @@ void::SPH::Update(float dt, Vector3* PosList) {
     auto updateParticle_end_time
         = std::chrono::high_resolution_clock::now();
 
-    resetHashLookupTableGPU();
-    //resetHashLookupTableGPU();
-    auto resetHashLookupTable_end_time
-        = std::chrono::high_resolution_clock::now();
 
     auto taken_time_SetParticlesInGridsHashing = std::chrono::duration_cast<
         std::chrono::milliseconds>(
@@ -100,11 +123,6 @@ void::SPH::Update(float dt, Vector3* PosList) {
             updateParticle_end_time - UpdatePressureAccelerationGrid_end_time)
         .count();
 
-    auto taken_time_resetHashLookupTable = std::chrono::duration_cast<
-        std::chrono::milliseconds>(
-            resetHashLookupTable_end_time - updateParticle_end_time)
-        .count();
-
     std::cout << ""
         << "gridding execution time: " << taken_time_SetParticlesInGridsHashing
         << "ms \n"
@@ -113,8 +131,6 @@ void::SPH::Update(float dt, Vector3* PosList) {
         << "force execution time : " << taken_time_UpdatePressureAccelerationGrid
         << "ms \n"
         << "update execution time: " << taken_time_updateParticle
-        << "ms \n"
-        << "reset execution time: " << taken_time_resetHashLookupTable
         << "ms \n";
         
 
@@ -125,6 +141,8 @@ void SPH::randomPositionStart()
     /*for (int i = 0; i < numParticles; i++) {
         float x = rand() % (int)screenWidth;
         float y = rand() % (int)screeenHeight;
+        float z = rand() % (int)screeenHeight;
+
         particles[i].Position = Vector3(x, y);
     }*/
 }
@@ -360,6 +378,7 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
+    resetHashLookupTableGPU();
 
     glUseProgram(HashTableSource);
     glUniform1i(0, numParticles);

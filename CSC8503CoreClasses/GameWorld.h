@@ -58,6 +58,9 @@ namespace NCL {
 				return worldStateCounter;
 			}
 
+			int marchingCubestriangleCount;
+
+
 		protected:
 			std::vector<GameObject*> gameObjects;
 			std::vector<Constraint*> constraints;
@@ -68,6 +71,7 @@ namespace NCL {
 			bool shuffleObjects;
 			int		worldIDCounter;
 			int		worldStateCounter;
+
 		};
 	}
 }

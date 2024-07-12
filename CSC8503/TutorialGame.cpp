@@ -69,7 +69,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	numParticles = 500000;
 	positionList = new Vector3[numParticles];
 	
-	water = new SPH(numParticles, positionList);
+	water = new SPH(numParticles, positionList,*world);
 
 	InitialiseAssets();
 
@@ -116,6 +116,7 @@ void NCL::CSC8503::TutorialGame::InitComputeShaders()
 	water->updatePressureAccelerationSource = CompileComputeShader("calcPressureForce.comp");
 	water->updateParticlesSource = CompileComputeShader("UpdateParticles.comp");
 	water->resetHashTableSource = CompileComputeShader("ResetHashLookupTable.comp");
+
 }
 
 GLuint TutorialGame::CompileComputeShader(const std::string& filename)

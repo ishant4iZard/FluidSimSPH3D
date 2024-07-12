@@ -7,16 +7,18 @@
 
 struct boundingArea {
 	int left = 0;
-	int right = 480;
-	int bottom = 900;
+	int right = 250;
+	int bottom = 400;
 	int top = 0;
 	int front = 0;
-	int back = 250;
+	int back = 350;
 };
 
 namespace NCL {
 	namespace CSC8503 {
 		using namespace Maths;
+
+		class GameWorld;
 		class SPH
 		{
 		private:
@@ -114,12 +116,23 @@ namespace NCL {
 			GLuint particleBuffer;
 			GLuint hashLookupBuffer;
 			GLuint postitionBuffer;
+			GLuint CounterBuffer;
+			GLuint TriangleBuffer;
+			GLuint NeighbourParticlesBuffer;
 
 			int local_size_x;
 
+			int nextHashingFrame = 0;
+			const int hashEveryNFrame = 5;
+
+			GameWorld& gameWorld;
+			float marchingCubesSize;
+			int marchingCubesNoGrids;
+			int marchingCubesIsoLevel;
+
 		public:
 
-			SPH(int inNumParticles, Vector3* PosList);
+			SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld);
 			~SPH();
 
 			GLuint setParticlesInGridsSource;

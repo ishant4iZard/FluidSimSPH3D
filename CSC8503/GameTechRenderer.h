@@ -21,6 +21,10 @@ namespace NCL {
 			Texture*	LoadTexture(const std::string& name);
 			Shader*		LoadShader(const std::string& vertex, const std::string& fragment);
 
+			void setMarchingCubesBuffer(unsigned int inBuffer) {
+				marchingCubesBuffer = inBuffer;
+			}
+
 		protected:
 			void NewRenderLines();
 			void NewRenderText();
@@ -37,6 +41,7 @@ namespace NCL {
 			void RenderCamera(); 
 			void RenderSkybox();
 			void RenderInstancedRenderObject();
+			void RenderMarchingCubesMesh();
 
 			void LoadSkybox();
 
@@ -48,6 +53,7 @@ namespace NCL {
 
 			OGLShader*  debugShader;
 			OGLShader*  skyboxShader;
+			OGLShader*  marchingCubesShader;
 			OGLMesh*	skyboxMesh;
 			GLuint		skyboxTex;
 
@@ -77,6 +83,8 @@ namespace NCL {
 			GLuint textColourVBO;
 			GLuint textTexVBO;
 			size_t textCount;
+
+			GLuint marchingCubesBuffer;
 		};
 	}
 }
