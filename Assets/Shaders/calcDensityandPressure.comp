@@ -32,7 +32,7 @@ layout(location = 6) uniform float idealDensity;
 layout(location = 7) uniform float pressureMultipler;
 
 uint calcHash(ivec3 gridpos) {
-    return (uint((gridpos.x * hashfunctionX) + (gridpos.y * hashfunctionY) + (gridpos.z * hashfunctionZ)) % particles.length());
+    return (uint((gridpos.x * hashfunctionX) ^ (gridpos.y * hashfunctionY) ^ (gridpos.z * hashfunctionZ)) % particles.length());
 }
 
 float smoothingKernel(float h, float r) {

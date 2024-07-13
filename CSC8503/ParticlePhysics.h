@@ -112,6 +112,9 @@ namespace NCL {
 			void updateParticleGPU(float dt, Vector3* PosList);
 			void resetHashLookupTableGPU();
 
+			void PreMarchingCubes();
+			void MarchingCubes();
+
 
 			GLuint particleBuffer;
 			GLuint hashLookupBuffer;
@@ -123,12 +126,24 @@ namespace NCL {
 			int local_size_x;
 
 			int nextHashingFrame = 0;
-			const int hashEveryNFrame = 5;
+			const int hashEveryNFrame = 3;
 
 			GameWorld& gameWorld;
 			float marchingCubesSize;
 			int marchingCubesNoGrids;
 			int marchingCubesIsoLevel;
+
+			int numTriMarchingCubes;
+
+			int numCubesXaxisMarchingCubes;
+			int numCubesYaxisMarchingCubes;
+			int numCubesZaxisMarchingCubes;
+
+			//std::vector<Vector4> triangleData;
+			//std::vector<float> NeigbourParticles;
+
+			Matrix4 modelMatrix = Matrix4();
+			Matrix4 modelViewMatrix;
 
 		public:
 
@@ -142,11 +157,18 @@ namespace NCL {
 			GLuint updatePressureAccelerationSource;
 			GLuint updateParticlesSource;
 			GLuint resetHashTableSource;
+			GLuint preMarchingCubesSource;
+			GLuint MarchingCubesSource;
+
 
 			void Update(float dt, Vector3* PosList);
 
 			GLuint getparticleBuffer() {
 				return particleBuffer;
+			}
+
+			GLuint getTriangleBuffer() {
+				return TriangleBuffer;
 			}
 		};
 	}

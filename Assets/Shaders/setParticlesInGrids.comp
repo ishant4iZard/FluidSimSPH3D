@@ -23,8 +23,8 @@ layout(location = 1) uniform int hashfunctionX;
 layout(location = 2) uniform int hashfunctionY;
 layout(location = 3) uniform int hashfunctionZ;
 
-uint calcHash(ivec3 gridpos){
-    return (uint((gridpos.x * hashfunctionX) + (gridpos.y * hashfunctionY) + (gridpos.z * hashfunctionZ)) % particles.length());
+uint calcHash(ivec3 gridpos) {
+    return (uint((gridpos.x * hashfunctionX) ^ (gridpos.y * hashfunctionY) ^ (gridpos.z * hashfunctionZ)) % particles.length());
 }
 
 void main() {

@@ -120,8 +120,8 @@ void GameTechRenderer::RenderFrame() {
 	RenderShadowMap();
 	RenderSkybox();
 	RenderCamera();
-	RenderInstancedRenderObject();
-
+	//RenderInstancedRenderObject();
+	RenderMarchingCubesMesh();
 	glDisable(GL_CULL_FACE); //Todo - text indices are going the wrong way...
 	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST);
@@ -381,21 +381,21 @@ void NCL::CSC8503::GameTechRenderer::RenderMarchingCubesMesh()
 	}
 
 	Matrix4 modelMatrix = Matrix4();
-	glUniformMatrix4fv(modelLocation, 1, false, (float*)&modelMatrix);
+	//glUniformMatrix4fv(modelLocation, 1, false, (float*)&modelMatrix);
 
 	Matrix4 fullShadowMat; // TODO calculate it in vertex shader = shadowMatrix * modelMatrix;
 	glUniformMatrix4fv(shadowLocation, 1, false, (float*)&fullShadowMat);
 
-	Vector4 colour = Vector4(0.f,0.4f,0.f,0.3f);
+	Vector4 colour = Vector4(0.109375f, 0.63671875f, 0.921875f, 0.6f);
 	glUniform4fv(colourLocation, 1, &colour.x);
 
 	glUniform1i(hasVColLocation, false);
 
 	glUniform1i(hasTexLocation, false);
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, marchingCubesBuffer);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, marchingCubesBuffer);
 
-	glDrawArrays(GL_TRIANGLES, 0, gameWorld.marchingCubestriangleCount * 3);
+	glDrawArrays(GL_TRIANGLES, 0, gameWorld.marchingCubestriangleCount/2 );
 
 	
 }

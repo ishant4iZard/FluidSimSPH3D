@@ -1,9 +1,9 @@
-#include "TutorialGame.h"
+#include "Assets.h"
 #include "GameWorld.h"
+#include "ParticlePhysics.h"
 #include "RenderObject.h"
 #include "TextureLoader.h"
-#include "ParticlePhysics.h"
-#include "Assets.h"
+#include "TutorialGame.h"
 #include <Maths.h>
 
 
@@ -73,10 +73,10 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	InitialiseAssets();
 
-	InitDefaultFloor();
+	//InitDefaultFloor();
 
 	particleBuffer = water->getparticleBuffer();
-	
+	renderer->setMarchingCubesBuffer(water->getTriangleBuffer());
 	
 }
 
@@ -116,6 +116,8 @@ void NCL::CSC8503::TutorialGame::InitComputeShaders()
 	water->updatePressureAccelerationSource = CompileComputeShader("calcPressureForce.comp");
 	water->updateParticlesSource = CompileComputeShader("UpdateParticles.comp");
 	water->resetHashTableSource = CompileComputeShader("ResetHashLookupTable.comp");
+	water->preMarchingCubesSource = CompileComputeShader("preMarchingCubes.comp");
+	water->MarchingCubesSource = CompileComputeShader("MarchingCubes.comp");
 
 }
 
@@ -208,8 +210,8 @@ void TutorialGame::UpdateGame(float dt) {
 
 	//ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, numParticles);
 
-	OGLShader* shader = (OGLShader*)(ParticleObject->GetRenderObject()->GetShader());
-	shader->setParticleBuffer(particleBuffer);
+	//OGLShader* shader = (OGLShader*)(ParticleObject->GetRenderObject()->GetShader());
+	//shader->setParticleBuffer(particleBuffer);
 
 	renderer->Update(dt);
 

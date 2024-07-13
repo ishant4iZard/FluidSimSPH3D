@@ -12,7 +12,7 @@ layout(location = 3) in vec3 normal;
 
 uniform vec4 		objectColour = vec4(1,1,1,1);
 
-layout(std430, binding = 7) buffer TriangleBuffer {
+layout(std430, binding = 3) buffer TriangleBuffer {
     vec4 triangles[];
 };
 
@@ -29,9 +29,7 @@ out Vertex
 
 void main(void)
 {
-	mat4 mvp 		  = (projMatrix * viewMatrix * modelMatrix);
-	mat3 normalMatrix = transpose ( inverse ( mat3 ( modelMatrix )));
-
+	mat4 mvp 		  = (projMatrix * viewMatrix );
 	uint triangleIndex = gl_VertexID / 3;
     uint vertexIndex = gl_VertexID % 3;
 
@@ -40,7 +38,7 @@ void main(void)
 
 	OUT.shadowProj 	=  shadowMatrix * vec4 ( vertexPos);
 	OUT.worldPos 	= ( modelMatrix * vec4 ( vertexPos)). xyz ;
-	OUT.normal 		= normalize ( normalMatrix * normalize ( vertexNormal.xyz ));
+	OUT.normal 		= normalize ( vertexNormal.xyz );
 	
 	OUT.texCoord	= texCoord;
 	OUT.colour		= objectColour;
@@ -48,5 +46,5 @@ void main(void)
 	if(hasVertexColours) {
 		OUT.colour		= objectColour * colour;
 	}
-	gl_Position		= mvp * vec4(position, 1.0);
+	gl_Position		= mvp * vertexPos;
 }

@@ -18,13 +18,18 @@ SPH::SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld) :gameWorl
     SmoothingKernelMultiplier = 5 * (6 / (PI * pow(smoothingRadius / 100, 4)));
     SmoothingKernelDerivativeMultiplier = 5 * (12 / (PI * pow(smoothingRadius / 100, 4)));
 
-    marchingCubesSize = 10.f;
+    marchingCubesSize = 1.f;
 
-    marchingCubesNoGrids =  (fence.right - fence.left) / marchingCubesSize *
-                            (fence.bottom - fence.top) / marchingCubesSize *
-                            (fence.back - fence.front) / marchingCubesSize;
+    numCubesXaxisMarchingCubes= ((fence.right - fence.left) / marchingCubesSize) + 2;
+    numCubesYaxisMarchingCubes= ((fence.bottom - fence.top) / marchingCubesSize) + 2;
+    numCubesZaxisMarchingCubes= ((fence.back - fence.front) / marchingCubesSize) + 2;
 
-    marchingCubesIsoLevel = 20;
+    marchingCubesNoGrids = numCubesXaxisMarchingCubes * numCubesYaxisMarchingCubes * numCubesZaxisMarchingCubes;
+
+    //triangleData.resize(marchingCubesNoGrids * 5 * 6);
+    //NeigbourParticles.resize(marchingCubesNoGrids);
+
+    marchingCubesIsoLevel = 3;
 
     hashLookupTable = std::vector<int>(numParticles, INT_MAX);
     resetHashLookupTable();
@@ -45,13 +50,20 @@ SPH::SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld) :gameWorl
 
     glGenBuffers(1, &NeighbourParticlesBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, NeighbourParticlesBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, marchingCubesNoGrids * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, NeighbourParticlesBuffer);
 
     glGenBuffers(1, &TriangleBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, TriangleBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(Vector4), nullptr, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, TriangleBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 10000000 * 6 * sizeof(Vector4), nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, TriangleBuffer); 
+    
+    glGenBuffers(1, &CounterBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, CounterBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned int), &numTriMarchingCubes, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, CounterBuffer);
+
+
 
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
 
@@ -60,6 +72,8 @@ SPH::SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld) :gameWorl
 
     if (local_size_x > localsizebest)local_size_x = localsizebest;
     //local_size_x = 256;
+
+    
 
 }
 
@@ -72,68 +86,29 @@ SPH::~SPH()
 }
 
 void::SPH::Update(float dt, Vector3* PosList) {
-    auto start_time
-        = std::chrono::high_resolution_clock::now();
-
     //SetParticlesInGridsHashing();
     if (nextHashingFrame == 0) {
         SetParticlesInGridsHashingGPU();
         nextHashingFrame = hashEveryNFrame;
+        PreMarchingCubes();
+        MarchingCubes();
     }
     else {
         nextHashingFrame--;
     }
 
-    auto SetParticlesInGridsHashing_end_time
-        = std::chrono::high_resolution_clock::now();
-
     //UpdateDensityandPressureGrid();
     UpdateDensityandPressureGridGPU();
-    auto UpdateDensityandPressureGrid_end_time
-        = std::chrono::high_resolution_clock::now();
 
     //UpdatePressureAccelerationGrid();
     UpdatePressureAccelerationGridGPU();
-    auto UpdatePressureAccelerationGrid_end_time
-        = std::chrono::high_resolution_clock::now();
 
     //updateParticle(dt, PosList);
     updateParticleGPU(dt, PosList);
-    auto updateParticle_end_time
-        = std::chrono::high_resolution_clock::now();
 
 
-    auto taken_time_SetParticlesInGridsHashing = std::chrono::duration_cast<
-        std::chrono::milliseconds>(
-            SetParticlesInGridsHashing_end_time - start_time)
-        .count();
-
-    auto taken_time_UpdateDensityandPressureGrid = std::chrono::duration_cast<
-        std::chrono::milliseconds>(
-            UpdateDensityandPressureGrid_end_time - SetParticlesInGridsHashing_end_time)
-        .count();
-
-    auto taken_time_UpdatePressureAccelerationGrid = std::chrono::duration_cast<
-        std::chrono::milliseconds>(
-            UpdatePressureAccelerationGrid_end_time - UpdateDensityandPressureGrid_end_time)
-        .count();
-
-    auto taken_time_updateParticle = std::chrono::duration_cast<
-        std::chrono::milliseconds>(
-            updateParticle_end_time - UpdatePressureAccelerationGrid_end_time)
-        .count();
-
-    std::cout << ""
-        << "gridding execution time: " << taken_time_SetParticlesInGridsHashing
-        << "ms \n"
-        << "dens execution time: " << taken_time_UpdateDensityandPressureGrid
-        << "ms \n"
-        << "force execution time : " << taken_time_UpdatePressureAccelerationGrid
-        << "ms \n"
-        << "update execution time: " << taken_time_updateParticle
-        << "ms \n";
         
-
+    gameWorld.marchingCubestriangleCount = numTriMarchingCubes;
 }
 
 void SPH::randomPositionStart()
@@ -454,6 +429,7 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
     glUniform3fv(8, 1, &gravity[0]);
     glUniform1f(9, particleRadius);
     glUniform1f(10, dampingRate);
+    glUniform1f(11, smoothingRadius);
 
     int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
 
@@ -480,5 +456,66 @@ void NCL::CSC8503::SPH::resetHashLookupTableGPU()
 
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+}
+
+void NCL::CSC8503::SPH::PreMarchingCubes()
+{
+    glUseProgram(preMarchingCubesSource);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, NeighbourParticlesBuffer);
+    glUniform1f(0, smoothingRadius);
+    glUniform1i(1, hashX);
+    glUniform1i(2, hashY);
+    glUniform1i(3, hashZ);
+    glUniform1f(4, marchingCubesSize);
+    glUniform1i(5, fence.left);
+    glUniform1i(6, fence.right);
+    glUniform1i(7, fence.bottom);
+    glUniform1i(8, fence.top);
+    glUniform1i(9, fence.front);
+    glUniform1i(10, fence.back);
+
+    //glDispatchCompute((numCubesXaxisMarchingCubes + 7) / 8, (numCubesYaxisMarchingCubes + 7) / 8, (numCubesZaxisMarchingCubes + 7) / 8);
+    glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) / 10, (numCubesZaxisMarchingCubes + 9) / 10);
+
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    //glGetNamedBufferSubData(NeighbourParticlesBuffer, 0, marchingCubesNoGrids * sizeof(int), NeigbourParticles.data());
+
+}
+
+void NCL::CSC8503::SPH::MarchingCubes()
+{
+    numTriMarchingCubes = 0;
+    //triangleData.clear();
+    glNamedBufferSubData(CounterBuffer, 0, sizeof(unsigned int), &numTriMarchingCubes);
+    //glNamedBufferSubData(TriangleBuffer, 0, marchingCubesNoGrids * 5 * 6 * sizeof(Vector4), triangleData.data());
+
+
+    modelViewMatrix = modelMatrix * gameWorld.GetMainCamera().BuildViewMatrix() ;
+
+    glUseProgram(MarchingCubesSource);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, NeighbourParticlesBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, TriangleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, CounterBuffer);
+
+    glUniform1f(0, marchingCubesIsoLevel);
+    glUniform1f(1, marchingCubesSize);
+    glUniform1i(2, numCubesXaxisMarchingCubes);
+    glUniform1i(3, numCubesYaxisMarchingCubes);
+    glUniform1i(4, numCubesZaxisMarchingCubes);
+    //glUniformMatrix4fv(5, 1, false, (float*)&modelViewMatrix);
+
+
+    glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) /10, (numCubesZaxisMarchingCubes + 9) / 10);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+
+    glGetNamedBufferSubData(CounterBuffer, 0, sizeof(unsigned int), &numTriMarchingCubes);
+    //glGetNamedBufferSubData(TriangleBuffer, 0, marchingCubesNoGrids * 5 * 6 * sizeof(Vector4), triangleData.data());
+
+
 
 }

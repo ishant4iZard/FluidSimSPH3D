@@ -33,6 +33,7 @@ layout(location = 7) uniform bool gravityEnabled;
 layout(location = 8) uniform vec3 gravity;
 layout(location = 9) uniform float particleRadius;
 layout(location = 10) uniform float dampingRate;
+layout(location = 11) uniform float smoothingRadius;
 
 void main() {
     uint index = gl_GlobalInvocationID.x;
@@ -47,29 +48,29 @@ void main() {
 
     vec3 position = p.Position + velocity * dt;
 
-    float radiusOffset = 0.0001f + particleRadius;
+    float radiusOffset = 0.0001f + particleRadius + smoothingRadius;
 
-    if (position.y >= fence.bottom - particleRadius) {
+    if (position.y >= fence.bottom - particleRadius - smoothingRadius) {
         position.y = fence.bottom - radiusOffset;
         velocity.y = -velocity.y * dampingRate;
     }
-    if (position.y <= fence.top + particleRadius) {
+    if (position.y <= fence.top + particleRadius + smoothingRadius) {
         position.y = fence.top + radiusOffset;
         velocity.y = -velocity.y * dampingRate;
     }
-    if (position.x >= fence.right - particleRadius) {
+    if (position.x >= fence.right - particleRadius -smoothingRadius) {
         position.x = fence.right - radiusOffset;
         velocity.x = -velocity.x * dampingRate;
     }
-    if (position.x <= fence.left + particleRadius) {
+    if (position.x <= fence.left + particleRadius +smoothingRadius) {
         position.x = fence.left + radiusOffset;
         velocity.x = -velocity.x * dampingRate;
     }
-    if (position.z >= fence.back - particleRadius) {
+    if (position.z >= fence.back - particleRadius -smoothingRadius) {
         position.z = fence.back - radiusOffset;
         velocity.z = -velocity.z * dampingRate;
     }
-    if (position.z <= fence.front + particleRadius) {
+    if (position.z <= fence.front + particleRadius+smoothingRadius) {
         position.z = fence.front + radiusOffset;
         velocity.z = -velocity.z * dampingRate;
     }
@@ -81,7 +82,7 @@ void main() {
     particles[index].Velocity = velocity;
     particles[index].Position = position;
 
-    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left), float(fence.right));
-    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.top), float(fence.bottom));
-    particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front), float(fence.back));
+    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left +smoothingRadius), float(fence.right-smoothingRadius));
+    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.top+smoothingRadius), float(fence.bottom-smoothingRadius));
+    particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front+smoothingRadius), float(fence.back-smoothingRadius));
 }

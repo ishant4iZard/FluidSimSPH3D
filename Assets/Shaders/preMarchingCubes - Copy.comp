@@ -49,18 +49,15 @@ uint calcHash(ivec3 gridpos) {
 void main() {
     ivec3 index = ivec3(gl_GlobalInvocationID.xyz);
     
-    // Expand the grid size vector by one on each side
-    ivec3 gridSizeVec = ivec3(((fence.right - fence.left) / marchingCubeGridSize) + 2,
-                              ((fence.bottom - fence.top) / marchingCubeGridSize) + 2,
-                              ((fence.back - fence.front) / marchingCubeGridSize) + 2);
+    ivec3 gridSizeVec = ivec3((fence.right - fence.left) / marchingCubeGridSize,
+                              (fence.bottom - fence.top) / marchingCubeGridSize,
+                              (fence.back - fence.front) / marchingCubeGridSize);
 
-    // Update bounds checking to account for the expanded grid
-    if (index.x >= gridSizeVec.x || index.y >= gridSizeVec.y || index.z >= gridSizeVec.z)
+    if (index.x > gridSizeVec.x || index.y > gridSizeVec.y || index.z > gridSizeVec.z)
         return;
 
     vec3 least = vec3(fence.left, fence.top, fence.front);
-    // Adjust position calculation to start one grid before
-    ivec3 pos = ivec3(least + vec3(index - ivec3(1)) * marchingCubeGridSize);
+    ivec3 pos = ivec3(least + vec3(index) * marchingCubeGridSize);
     ivec3 gridPos = ivec3(pos / gridSize);
 
     // Precompute the hashes for the neighboring cells

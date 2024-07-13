@@ -30,8 +30,8 @@ layout(location = 4) uniform float mass;
 layout(location = 5) uniform float smoothingKernelDerivativeMultiplier;
 layout(location = 6) uniform float viscosityMultiplier;
 
-uint calcHash(ivec3 gridpos){
-    return (uint((gridpos.x * hashfunctionX) + (gridpos.y * hashfunctionY) + (gridpos.z * hashfunctionZ)) % particles.length());
+uint calcHash(ivec3 gridpos) {
+    return (uint((gridpos.x * hashfunctionX) ^ (gridpos.y * hashfunctionY) ^ (gridpos.z * hashfunctionZ)) % particles.length());
 }
 
 float smoothingKernelDerivative(float h, float r) {
