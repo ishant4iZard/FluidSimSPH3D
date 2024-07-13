@@ -126,23 +126,13 @@ void Mesh::SetVertexSkinIndices(const std::vector<Vector4i>& newSkinIndices) {
 
 void Mesh::SetInstanceModelMatrices(Vector3* inInstanceParticlePositionList, const unsigned int& inParticleCount)
 {
-	instancedParticlePosition.resize(inParticleCount); //its slow
-	std::for_each(std::execution::par, inInstanceParticlePositionList, inInstanceParticlePositionList + inParticleCount, [this, inInstanceParticlePositionList](const Vector3& p) {
-		std::size_t index = &p - inInstanceParticlePositionList;
-		instancedParticlePosition[index] = inInstanceParticlePositionList[index];
-		});
 	SetInstanceCount(inParticleCount);
 	GenerateInstanceModelMatrix();
 }
 
 void NCL::Rendering::Mesh::UpdateParticlesPositionInstance(Vector3* inInstanceParticlePositionList, const unsigned int& inParticleCount)
 {
-	std::for_each(std::execution::par, inInstanceParticlePositionList, inInstanceParticlePositionList + inParticleCount, [this, inInstanceParticlePositionList](const Vector3& p) {
-		std::size_t index = &p - inInstanceParticlePositionList;
-		instancedParticlePosition[index] = inInstanceParticlePositionList[index];
-		});
 
-	UpdateInstanceModelMatrix();
 }
 
 void Mesh::SetDebugName(const std::string& newName) {

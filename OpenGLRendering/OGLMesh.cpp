@@ -99,7 +99,6 @@ void NCL::Rendering::OGLMesh::GenerateInstanceModelMatrix()
 
 	glGenBuffers(1, &attributeBuffers[VertexAttribute::InstancedParticlePosition]);
 	glBindBuffer(GL_ARRAY_BUFFER, attributeBuffers[VertexAttribute::InstancedParticlePosition]);
-	glBufferData(GL_ARRAY_BUFFER, instanceCount * sizeof(Vector3), &GetInstanceParticlePositionListData()[0], GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(VertexAttribute::InstancedParticlePosition);
 	glVertexAttribPointer(VertexAttribute::InstancedParticlePosition, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3), (void*)0);
@@ -110,7 +109,7 @@ void NCL::Rendering::OGLMesh::GenerateInstanceModelMatrix()
 
 void NCL::Rendering::OGLMesh::UpdateInstanceModelMatrix()
 {
-	glBufferSubData(GL_ARRAY_BUFFER, 0, instanceCount * sizeof(Vector3), &GetInstanceParticlePositionListData()[0]);
+
 }
 
 void OGLMesh::UpdateGPUBuffers(unsigned int startVertex, unsigned int vertexCount) {

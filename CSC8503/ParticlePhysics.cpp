@@ -5,7 +5,7 @@
 
 using namespace NCL::CSC8503;
 
-SPH::SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld) :gameWorld(ingameWorld)
+SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
 {
     numParticles = inNumParticles;
     particles.resize(numParticles);
@@ -34,7 +34,7 @@ SPH::SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld) :gameWorl
     hashLookupTable = std::vector<int>(numParticles, INT_MAX);
     resetHashLookupTable();
 
-    GridStart(PosList);
+    GridStart();
     //randomPositionStart(screenWidth, screenHeight);
 
     glGenBuffers(1, &particleBuffer);
@@ -85,7 +85,7 @@ SPH::~SPH()
    
 }
 
-void::SPH::Update(float dt, Vector3* PosList) {
+void::SPH::Update(float dt) {
     //SetParticlesInGridsHashing();
     if (nextHashingFrame == 0) {
         SetParticlesInGridsHashingGPU();
@@ -104,7 +104,7 @@ void::SPH::Update(float dt, Vector3* PosList) {
     UpdatePressureAccelerationGridGPU();
 
     //updateParticle(dt, PosList);
-    updateParticleGPU(dt, PosList);
+    updateParticleGPU(dt);
 
 
         
@@ -122,7 +122,7 @@ void SPH::randomPositionStart()
     }*/
 }
 
-void SPH::GridStart(Vector3* PosList)
+void SPH::GridStart()
 {
     Vector3 offsetVec(0, 0,0);
 
@@ -144,11 +144,10 @@ void SPH::GridStart(Vector3* PosList)
         particles[i].Position = Vector3(x, y, z);
         particles[i].PredictedPosition = Vector3(x, y, z);
 
-        PosList[i] = particles[i].Position;
     }
 }
 
-void SPH::updateParticle(float dt, Vector3* PosList)
+void SPH::updateParticle(float dt)
 {
 
     auto updateParticleProperties = [&](Particle& p) {
@@ -183,8 +182,6 @@ void SPH::updateParticle(float dt, Vector3* PosList)
             p.Position.z = fence.front+ (0.0001f + particleRadius);
             p.Velocity.z = -p.Velocity.z * dampingRate;
         }
-
-        PosList[index] = p.Position;
 
         p.PredictedPosition = p.Position + p.Velocity * (1 / 30.0f) + (gravityEnabled ? gravity : Vector3()) * 0.5f * (1 / 30.0f) * (1 / 30.0f);
 
@@ -413,7 +410,7 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
 
 }
 
-void NCL::CSC8503::SPH::updateParticleGPU(float dt, Vector3* PosList)
+void NCL::CSC8503::SPH::updateParticleGPU(float dt)
 {
     glUseProgram(updateParticlesSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);

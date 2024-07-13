@@ -94,7 +94,7 @@ namespace NCL {
 #pragma endregion
 
 			void randomPositionStart();
-			void GridStart(Vector3* PosList);
+			void GridStart();
 
 
 			double calcDensityGrid(int particleIndex, Vector3i gridPos);
@@ -104,12 +104,12 @@ namespace NCL {
 			void SetParticlesInGridsHashing();
 			void UpdateDensityandPressureGrid();
 			void UpdatePressureAccelerationGrid();
-			void updateParticle(float dt, Vector3* PosList);
+			void updateParticle(float dt);
 
 			void SetParticlesInGridsHashingGPU();
 			void UpdateDensityandPressureGridGPU();
 			void UpdatePressureAccelerationGridGPU();
-			void updateParticleGPU(float dt, Vector3* PosList);
+			void updateParticleGPU(float dt);
 			void resetHashLookupTableGPU();
 
 			void PreMarchingCubes();
@@ -147,7 +147,7 @@ namespace NCL {
 
 		public:
 
-			SPH(int inNumParticles, Vector3* PosList, GameWorld& ingameWorld);
+			SPH(int inNumParticles, GameWorld& ingameWorld);
 			~SPH();
 
 			GLuint setParticlesInGridsSource;
@@ -161,7 +161,7 @@ namespace NCL {
 			GLuint MarchingCubesSource;
 
 
-			void Update(float dt, Vector3* PosList);
+			void Update(float dt);
 
 			GLuint getparticleBuffer() {
 				return particleBuffer;

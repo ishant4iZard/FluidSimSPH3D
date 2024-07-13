@@ -295,9 +295,6 @@ void NCL::CSC8503::GameTechRenderer::RenderInstancedRenderObject()
 		Matrix4 modelMatrix = (*tempInstancedRenderObject).GetTransform()->GetMatrix();
 		glUniformMatrix4fv(modelLocation, 1, false, (float*)&modelMatrix);
 
-		auto particlePositionList = (*tempInstancedRenderObject).GetMesh()->GetInstanceParticlePositionListData();
-		glUniform3fv(instancedParticlePositionList, 1, (float*)&particlePositionList);
-		
 		Matrix4 fullShadowMat; // TODO calculate it in vertex shader = shadowMatrix * modelMatrix;
 		glUniformMatrix4fv(shadowLocation, 1, false, (float*)&fullShadowMat);
 

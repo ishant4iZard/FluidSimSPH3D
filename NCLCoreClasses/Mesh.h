@@ -178,14 +178,13 @@ namespace NCL::Rendering {
 		const std::vector<Vector4>&		GetTangentData()		const { return tangents;	}
 		const std::vector<Vector4>&		GetSkinWeightData()		const { return skinWeights; }
 		const std::vector<Vector4i>&		GetSkinIndexData()		const { return skinIndices; }
-		const std::vector<Vector3>& GetInstanceParticlePositionListData() const { return instancedParticlePosition; }
 
 		const std::vector<int>& GetJointParents()	const {
 			return jointParents;
 		}
 
 		const std::vector<unsigned int>& GetIndexData()			const { return indices;		}
-		const unsigned int& GetInstanceCount() { return instancedParticlePosition.size(); }
+		const unsigned int& GetInstanceCount() { return instanceCount; }
 
 		void SetVertexPositions(const std::vector<Vector3>& newVerts);
 		void SetVertexTextureCoords(const std::vector<Vector2>& newTex);
@@ -231,7 +230,6 @@ namespace NCL::Rendering {
 		std::vector<Vector3>		normals;
 		std::vector<Vector4>		tangents;
 		std::vector<unsigned int>	indices;
-		std::vector<Vector3>        instancedParticlePosition;
 		std::vector<SubMesh>		subMeshes;
 		std::vector<std::string>	subMeshNames;
 

@@ -10,38 +10,6 @@
 using namespace NCL;
 using namespace CSC8503;
 
-void setupBuffers(const std::vector<float>& A, const std::vector<float>& B, GLuint& ssboA, GLuint& ssboB, GLuint& ssboC) {
-	glGenBuffers(1, &ssboA);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboA);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, A.size() * sizeof(float), A.data(), GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboA);
-
-	glGenBuffers(1, &ssboB);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboB);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, B.size() * sizeof(float), B.data(), GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboB);
-
-	glGenBuffers(1, &ssboC);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboC);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, A.size() * sizeof(float), nullptr, GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboC);
-}
-
-
-void dispatchComputeShader(GLuint program, size_t numElements) {
-	glUseProgram(program);
-	GLuint numGroups = (numElements + 1023) / 1024;
-	glDispatchCompute(numGroups, 1, 1);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-}
-
-void getResults(GLuint ssboC, std::vector<float>& C) {
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboC);
-	float* ptr = (float*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-	C.assign(ptr, ptr + C.size());
-	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-}
-
 
 TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
 	world		= new GameWorld();
@@ -67,13 +35,12 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	
 	numParticles = 500000;
-	positionList = new Vector3[numParticles];
 	
-	water = new SPH(numParticles, positionList,*world);
+	water = new SPH(numParticles,*world);
 
 	InitialiseAssets();
 
-	//InitDefaultFloor();
+	InitDefaultFloor();
 
 	particleBuffer = water->getparticleBuffer();
 	renderer->setMarchingCubesBuffer(water->getTriangleBuffer());
@@ -196,7 +163,7 @@ void TutorialGame::UpdateGame(float dt) {
 	auto start_time
 		= std::chrono::high_resolution_clock::now();
 
-	water->Update(dt, positionList);
+	water->Update(dt);
 
 	auto physics_end_time
 		= std::chrono::high_resolution_clock::now();
@@ -252,8 +219,8 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 	GameObject* sphere = new GameObject("sphere");
 
 	Vector3 sphereSize = Vector3(radius, radius, radius);
-	SphereVolume* volume = new SphereVolume(radius);
-	sphere->SetBoundingVolume((CollisionVolume*)volume);
+	/*SphereVolume* volume = new SphereVolume(radius);
+	sphere->SetBoundingVolume((CollisionVolume*)volume);*/
 
 	sphere->GetTransform()
 		.SetScale(sphereSize)
