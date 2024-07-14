@@ -50,12 +50,12 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
 
     glGenBuffers(1, &NeighbourParticlesBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, NeighbourParticlesBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, marchingCubesNoGrids * sizeof(int), nullptr, GL_DYNAMIC_DRAW);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, marchingCubesNoGrids * sizeof(int), nullptr, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, NeighbourParticlesBuffer);
 
     glGenBuffers(1, &TriangleBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, TriangleBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, 10000000 * 6 * sizeof(Vector4), nullptr, GL_DYNAMIC_DRAW);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, 10000000 * 6 * sizeof(Vector4), nullptr, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, TriangleBuffer); 
     
     glGenBuffers(1, &CounterBuffer);
@@ -474,8 +474,8 @@ void NCL::CSC8503::SPH::PreMarchingCubes()
     glUniform1i(9, fence.front);
     glUniform1i(10, fence.back);
 
-    //glDispatchCompute((numCubesXaxisMarchingCubes + 7) / 8, (numCubesYaxisMarchingCubes + 7) / 8, (numCubesZaxisMarchingCubes + 7) / 8);
-    glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) / 10, (numCubesZaxisMarchingCubes + 9) / 10);
+    glDispatchCompute((numCubesXaxisMarchingCubes + 7) / 8, (numCubesYaxisMarchingCubes + 7) / 8, (numCubesZaxisMarchingCubes + 7) / 8);
+    //glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) / 10, (numCubesZaxisMarchingCubes + 9) / 10);
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -505,8 +505,9 @@ void NCL::CSC8503::SPH::MarchingCubes()
     glUniform1i(4, numCubesZaxisMarchingCubes);
     //glUniformMatrix4fv(5, 1, false, (float*)&modelViewMatrix);
 
+    glDispatchCompute((numCubesXaxisMarchingCubes + 7) / 8, (numCubesYaxisMarchingCubes + 7) / 8, (numCubesZaxisMarchingCubes + 7) / 8);
 
-    glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) /10, (numCubesZaxisMarchingCubes + 9) / 10);
+    //glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) /10, (numCubesZaxisMarchingCubes + 9) / 10);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 
