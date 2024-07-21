@@ -2,7 +2,6 @@
 #include "CollisionDetection.h"
 #include "PhysicsObject.h"
 #include "RenderObject.h"
-#include "NetworkObject.h"
 
 using namespace NCL::CSC8503;
 

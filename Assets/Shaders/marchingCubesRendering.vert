@@ -33,12 +33,22 @@ void main(void)
 	uint triangleIndex = gl_VertexID / 3;
     uint vertexIndex = gl_VertexID % 3;
 
-    vec4 vertexPos = triangles[triangleIndex * 6 + vertexIndex * 2];
-    vec4 vertexNormal = triangles[triangleIndex * 6 + vertexIndex * 2 + 1];
+	vec4 vertexPos[3];
+    vertexPos[0] = triangles[triangleIndex * 3];
+    vertexPos[1] = triangles[triangleIndex * 3 + 1];
+    vertexPos[2] = triangles[triangleIndex * 3 + 2];
 
-	OUT.shadowProj 	=  shadowMatrix * vec4 ( vertexPos);
-	OUT.worldPos 	= ( modelMatrix * vec4 ( vertexPos)). xyz ;
-	OUT.normal 		= normalize ( vertexNormal.xyz );
+    //vec4 vertexPos = triangles[triangleIndex * 6 + vertexIndex * 2];
+    //vec4 vertexNormal = triangles[triangleIndex * 6 + vertexIndex * 2 + 1];
+
+	// Calculate the face normal
+	vec3 edge1 = vertexPos[1].xyz - vertexPos[0].xyz;
+	vec3 edge2 = vertexPos[2].xyz - vertexPos[0].xyz;
+	vec3 faceNormal = normalize(cross(edge1, edge2));
+
+	OUT.shadowProj 	=  shadowMatrix * vertexPos[vertexIndex];
+	OUT.worldPos 	= (modelMatrix * vertexPos[vertexIndex]).xyz;
+	OUT.normal 		= faceNormal;
 	
 	OUT.texCoord	= texCoord;
 	OUT.colour		= objectColour;
@@ -46,5 +56,5 @@ void main(void)
 	if(hasVertexColours) {
 		OUT.colour		= objectColour * colour;
 	}
-	gl_Position		= mvp * vertexPos;
+	gl_Position		= mvp * vertexPos[vertexIndex];
 }

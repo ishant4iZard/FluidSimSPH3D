@@ -35,6 +35,21 @@ uint calcHash(ivec3 gridpos) {
     return (uint((gridpos.x * hashfunctionX) ^ (gridpos.y * hashfunctionY) ^ (gridpos.z * hashfunctionZ)) % particles.length());
 }
 
+uint spreadBits(uint v) {
+    v = (v | (v << 16)) & 0x030000FF;
+    v = (v | (v << 8)) & 0x0300F00F;
+    v = (v | (v << 4)) & 0x030C30C3;
+    v = (v | (v << 2)) & 0x09249249;
+    return v;
+}
+
+uint zOrder(vec3 v) {
+    uint x = uint(v.x) % 64;
+    uint y = uint(v.y) % 64;
+    uint z = uint(v.z) % 64;
+    return spreadBits(x) | (spreadBits(y) << 1) | (spreadBits(z) << 2);
+}
+
 float smoothingKernel(float h, float r) {
     if (r > h) return 0.0;
     return smoothingKernelMultiplier * pow(((h - r) / 100.0f), 2);
@@ -61,7 +76,9 @@ void main() {
         for (int iy = -1; iy <= 1; iy++) {
             for (int iz = -1; iz <= 1; iz++) {
                 ivec3 neighborGridPos = gridpos + ivec3(ix, iy, iz);
-                neighborHashes[count++] = calcHash(neighborGridPos);
+                //neighborHashes[count++] = calcHash(neighborGridPos);
+                neighborHashes[count++] = zOrder(neighborGridPos);
+
             }
         }
     }

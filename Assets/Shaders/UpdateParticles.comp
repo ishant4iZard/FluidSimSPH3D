@@ -82,7 +82,7 @@ void main() {
     particles[index].Velocity = velocity;
     particles[index].Position = position;
 
-    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left +smoothingRadius), float(fence.right-smoothingRadius));
-    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.top+smoothingRadius), float(fence.bottom-smoothingRadius));
-    particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front+smoothingRadius), float(fence.back-smoothingRadius));
+    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left +radiusOffset), float(fence.right-radiusOffset));
+    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.top+radiusOffset), float(fence.bottom-radiusOffset));
+    particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front+radiusOffset), float(fence.back-radiusOffset));
 }

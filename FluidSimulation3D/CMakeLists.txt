@@ -1,71 +1,39 @@
-set(PROJECT_NAME CSC8503CoreClasses)
+set(PROJECT_NAME FluidSimulation3D)
 
 ################################################################################
 # Source groups
 ################################################################################
-set(Collision_Detection
-    "AABBVolume.h"
-    "CapsuleVolume.h"  
-    "CollisionDetection.h"
-    "CollisionDetection.cpp"
-    "CollisionVolume.h"
-    "OBBVolume.h"
-    "QuadTree.h"
-    "QuadTree.cpp"
-    "Ray.h"
-    "SphereVolume.h"
-)
-source_group("Collision Detection" FILES ${Collision_Detection})
-
-set(Physics
-    "constraint.h"  
-    "constraint.h"  
-    "PositionConstraint.cpp"
-    "PositionConstraint.h"
-    "OrientationConstraint.cpp"
-    "OrientationConstraint.h"
-    "PhysicsObject.cpp"
-    "PhysicsObject.h"
-    "PhysicsSystem.cpp"
-    "PhysicsSystem.h"
-)
-source_group("Physics" FILES ${Physics})
-
 set(Header_Files
-    "Debug.h"
-    "GameObject.h"
-    "GameWorld.h"
-    "RenderObject.h"
-    "Transform.h"
+    "GameTechRenderer.h"
+    "TutorialGame.h"
+    "Particle.h"
+    "ParticlePhysics.h"
+    "MarchingCubesConstants.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
-    "Debug.cpp"
-    "GameObject.cpp"
-    "GameWorld.cpp"
-    "RenderObject.cpp"
-    "Transform.cpp"
+    "GameTechRenderer.cpp"
+    "Main.cpp"
+    "TutorialGame.cpp"
+    "ParticlePhysics.cpp"
 )
+
 source_group("Source Files" FILES ${Source_Files})
 
 set(ALL_FILES
     ${Header_Files}
     ${Source_Files}
-    ${Collision_Detection}
-    ${Physics})
+)
 
-set_source_files_properties(${ALL_FILES} PROPERTIES LANGUAGE CXX)
 
 ################################################################################
 # Target
 ################################################################################
-add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
-
-#set(CMAKE_CXX_SOURCE_FILE_EXTENSIONS c;C;M;c++;cc;cpp;cxx;m;mm;mpp;CPP;ixx;cppm)
+add_executable(${PROJECT_NAME}  ${ALL_FILES})
 
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
-set(ROOT_NAMESPACE CSC8503CoreClasses)
+set(ROOT_NAMESPACE FluidSimulation3D)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VS_GLOBAL_KEYWORD "Win32Proj"
@@ -73,28 +41,39 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 set_target_properties(${PROJECT_NAME} PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
 )
+
 ################################################################################
 # Compile definitions
 ################################################################################
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    "UNICODE"
-    "_UNICODE"
-    "WIN32_LEAN_AND_MEAN"
-    "_WINSOCK_DEPRECATED_NO_WARNINGS"
-	"NOMINMAX"
-)
+if(MSVC)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        "UNICODE;"
+        "_UNICODE" 
+        "WIN32_LEAN_AND_MEAN"
+        "_WINSOCKAPI_"   
+        "_WINSOCK2API_"
+        "_WINSOCK_DEPRECATED_NO_WARNINGS"
+    )
+endif()
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     <vector>
     <map>
     <stack>
-    <string>
-    <list>
+    <list>   
+	<set>   
+	<string>
     <thread>
     <atomic>
     <functional>
     <iostream>
-    <set>
+	<chrono>
+	<sstream>
+	
+	"../NCLCoreClasses/Vector2i.h"
+    "../NCLCoreClasses/Vector3i.h"
+    "../NCLCoreClasses/Vector4i.h"
+	
     "../NCLCoreClasses/Vector2.h"
     "../NCLCoreClasses/Vector3.h"
     "../NCLCoreClasses/Vector4.h"
@@ -103,25 +82,47 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE
     "../NCLCoreClasses/Matrix2.h"
     "../NCLCoreClasses/Matrix3.h"
     "../NCLCoreClasses/Matrix4.h"
-	"../NCLCoreClasses/GameTimer.h"
+	
+    "../NCLCoreClasses/GameTimer.h"
 )
+ 
 
 ################################################################################
 # Compile and link options
 ################################################################################
-
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<CONFIG:Release>:
+            /Oi;
+            /Gy
+        >
+        /permissive-;
+        /std:c++latest;
+        /sdl;
+        /W3;
+        ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT};
+        ${DEFAULT_CXX_EXCEPTION_HANDLING};
+        /Y-
+    )
+    target_link_options(${PROJECT_NAME} PRIVATE
+        $<$<CONFIG:Release>:
+            /OPT:REF;
+            /OPT:ICF
+        >
+    )
+endif()
 
 ################################################################################
 # Dependencies
 ################################################################################
-set(ADDITIONAL_LIBRARY_DEPENDENCIES
-    "NCLCoreClasses"
-    "ws2_32.lib"
-)
-
-include_directories("../NCLCoreClasses/")
-include_directories("./")
-
 if(MSVC)
-    target_link_libraries(${PROJECT_NAME} PRIVATE "ws2_32.lib")
+    target_link_libraries(${PROJECT_NAME} LINK_PUBLIC  "Winmm.lib")
 endif()
+
+include_directories("../OpenGLRendering/")
+include_directories("../NCLCoreClasses/")
+include_directories("../CSC8503CoreClasses/")
+
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC NCLCoreClasses)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503CoreClasses)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC OpenGLRendering)
