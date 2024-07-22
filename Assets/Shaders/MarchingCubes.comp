@@ -71,6 +71,14 @@ void main() {
     values[6] = getValue(index + ivec3(1, 1, 1));
     values[7] = getValue(index + ivec3(0, 1, 1));
 
+    for (int i = 0; i < 8; ++i) {
+        if (values[i] < isolevel) cubeIndex |= (1 << i);
+    }
+    
+    // Use the edge table to find the active edges
+    int edges = edgeTable[cubeIndex];
+    if (edges == 0) return; // No active edges, no triangles
+
     positions[0] = getPosition(index);
     positions[1] = getPosition(index + ivec3(1, 0, 0));
     positions[2] = getPosition(index + ivec3(1, 1, 0));
@@ -81,86 +89,43 @@ void main() {
     positions[7] = getPosition(index + ivec3(0, 1, 1));
 
     // Determine the cube index based on the isolevel
-    for (int i = 0; i < 8; ++i) {
-        if (values[i] < isolevel) cubeIndex |= (1 << i);
-    }
-    
-    // Use the edge table to find the active edges
-    int edges = edgeTable[cubeIndex];
-    if (edges == 0) return; // No active edges, no triangles
     
     // Compute the vertices on the active edges
     vec4 vertList[12];
     if ((edges & 1) != 0){
-//        vertList[0] = mix(  vec3(index) * gridSize, 
-//                            vec3(index + ivec3(1, 0, 0)) * gridSize, 
-//                            (isolevel - values[0]) / (values[1] - values[0]));
         vertList[0] = vertexInterp(isolevel, positions[0], positions[1], values[0], values[1]);
     }
     if ((edges & 2) != 0) {
-//        vertList[1] = mix(  vec3(index + ivec3(1, 0, 0)) * gridSize, 
-//                            vec3(index + ivec3(1, 1, 0)) * gridSize, 
-//                            (isolevel - values[1]) / (values[2] - values[1]));
         vertList[1] = vertexInterp(isolevel, positions[1], positions[2], values[1], values[2]);
     }
     if ((edges & 4) != 0) {
-//        vertList[2] = mix(  vec3(index + ivec3(1, 1, 0)) * gridSize, 
-//                            vec3(index + ivec3(0, 1, 0)) * gridSize, 
-//                            (isolevel - values[2]) / (values[3] - values[2]));
         vertList[2] = vertexInterp(isolevel, positions[2], positions[3], values[2], values[3]);
     }
     if ((edges & 8) != 0){ 
-//        vertList[3] = mix(  vec3(index + ivec3(0, 1, 0)) * gridSize, 
-//                            vec3(index) * gridSize, 
-//                            (isolevel - values[3]) / (values[0] - values[3]));
         vertList[3] = vertexInterp(isolevel, positions[3], positions[0], values[3], values[0]);
     }
     if ((edges & 16) != 0){
-//        vertList[4] = mix(  vec3(index) * gridSize, 
-//                            vec3(index + ivec3(0, 0, 1)) * gridSize, 
-//                            (isolevel - values[0]) / (values[4] - values[0]));
         vertList[4] = vertexInterp(isolevel, positions[4], positions[5], values[4], values[5]);
 }
     if ((edges & 32) != 0){
-//        vertList[5] = mix(  vec3(index + ivec3(1, 0, 0)) * gridSize, 
-//                            vec3(index + ivec3(1, 0, 1)) * gridSize, 
-//                            (isolevel - values[1]) / (values[5] - values[1]));
         vertList[5] = vertexInterp(isolevel, positions[5], positions[6], values[5], values[6]);
     }
     if ((edges & 64) != 0) {
-//        vertList[6] = mix(  vec3(index + ivec3(1, 1, 0)) * gridSize, 
-//                            vec3(index + ivec3(1, 1, 1)) * gridSize, 
-//                            (isolevel - values[2]) / (values[6] - values[2]));
         vertList[6] = vertexInterp(isolevel, positions[6], positions[7], values[6], values[7]);
     }
     if ((edges & 128) != 0) {
-//        vertList[7] = mix(  vec3(index + ivec3(0, 1, 0)) * gridSize, 
-//                            vec3(index + ivec3(0, 1, 1)) * gridSize, 
-//                            (isolevel - values[3]) / (values[7] - values[3]));
         vertList[7] = vertexInterp(isolevel, positions[7], positions[4], values[7], values[4]);
     }
     if ((edges & 256) != 0) {
-//        vertList[8] = mix(  vec3(index + ivec3(0, 0, 1)) * gridSize, 
-//                            vec3(index + ivec3(1, 0, 1)) * gridSize, 
-//                            (isolevel - values[4]) / (values[5] - values[4]));
         vertList[8] = vertexInterp(isolevel, positions[0], positions[4], values[0], values[4]);
     }
     if ((edges & 512) != 0) {
-//        vertList[9] = mix(  vec3(index + ivec3(1, 0, 1)) * gridSize, 
-//                            vec3(index + ivec3(1, 1, 1)) * gridSize, 
-//                            (isolevel - values[5]) / (values[6] - values[5]));
         vertList[9] = vertexInterp(isolevel, positions[1], positions[5], values[1], values[5]);
     }
     if ((edges & 1024) != 0) {
-//        vertList[10] = mix( vec3(index + ivec3(1, 1, 1)) * gridSize, 
-//                            vec3(index + ivec3(0, 1, 1)) * gridSize, 
-//                            (isolevel - values[6]) / (values[7] - values[6]));
         vertList[10] = vertexInterp(isolevel, positions[2], positions[6], values[2], values[6]);
     }
     if ((edges & 2048) != 0) {
-//        vertList[11] = mix( vec3(index + ivec3(0, 1, 1)) * gridSize, 
-//                            vec3(index + ivec3(0, 0, 1)) * gridSize, 
-//                            (isolevel - values[7]) / (values[4] - values[7]));
         vertList[11] = vertexInterp(isolevel, positions[3], positions[7], values[3], values[7]);
 
     }
@@ -170,10 +135,7 @@ void main() {
         vec4 v0 = vertList[triTable[cubeIndex][i]];
         vec4 v1 = vertList[triTable[cubeIndex][i + 1]];
         vec4 v2 = vertList[triTable[cubeIndex][i + 2]];
-        
-        // Calculate the normal of the triangle
-        vec3 normal = normalize(cross(v1.xyz - v0.xyz, v2.xyz - v0.xyz));
-        
+                
         // Store the triangle vertices and normals in the TriangleBuffer
         uint triangleIndex = atomicAdd(triangleCounter, 3);
         triangles[triangleIndex] = vec4(v0);
