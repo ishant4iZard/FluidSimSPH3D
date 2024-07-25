@@ -1,8 +1,6 @@
 # FluidSimulation3D
 
-FluidSimulation3D is a 3D fluid simulation project that implements a fluid simulation using the **Smoothed Particle Hydrodynamics (SPH)** method, integrated with the **Marching Cubes** algorithm for surface reconstruction. This project leverages both CPU and GPU computations, utilizing OpenGL compute shaders for efficient handling of particle updates, density and pressure calculations, and mesh generation.
-
-The framework for this project was provided by Professor Richard Davison, and changes have been made according to specific requirements.
+A project that implements a fluid simulation using the **Smoothed Particle Hydrodynamics (SPH)** method, integrated with the **Marching Cubes** algorithm for surface reconstruction. It leverages both CPU and GPU computations, utilizing OpenGL compute shaders for efficient handling of particle updates, density and pressure calculations, and mesh generation.
 
 ## Features
 

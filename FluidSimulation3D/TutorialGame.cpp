@@ -173,6 +173,7 @@ void TutorialGame::UpdateGame(float dt) {
 			physics_end_time - start_time)
 		.count();
 
+
 	//positionList[1000] = positionList[1000] + Vector3(0, 0, 1) * dt;
 
 	//ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, numParticles);
@@ -193,6 +194,8 @@ void TutorialGame::UpdateGame(float dt) {
 			render_end_time - physics_end_time)
 		.count();
 
+	
+
 	std::cout << "\r"
 		<< "phy execution time: " << taken_time_physics
 		<< "ms "
@@ -203,9 +206,9 @@ void TutorialGame::UpdateGame(float dt) {
 void TutorialGame::InitCamera() {
 	world->GetMainCamera().SetNearPlane(0.1f);
 	world->GetMainCamera().SetFarPlane(1000.0f);
-	world->GetMainCamera().SetPitch(-15.0f);
-	world->GetMainCamera().SetYaw(315.0f);
-	world->GetMainCamera().SetPosition(Vector3(-60, 40, 60));
+	world->GetMainCamera().SetPitch(-10.0f);
+	world->GetMainCamera().SetYaw(-90.0f);
+	world->GetMainCamera().SetPosition(Vector3(-350, 150, 150));
 }
 
 /*

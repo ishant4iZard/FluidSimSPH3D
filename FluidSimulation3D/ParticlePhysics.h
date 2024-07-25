@@ -37,6 +37,7 @@ namespace NCL {
 			std::vector<int> hashLookupTable;
 
 			boundingArea fence;
+			std::vector<std::pair<Vector3, Vector3>> fenceEdges;
 
 			bool gravityEnabled = 1;
 			Vector3 gravity = Vector3(0.f, -9.8f, 0.f);
@@ -90,6 +91,40 @@ namespace NCL {
 			int NextPowerOfTwo(int n) {
 				return pow(2, ceil(log2(n)));
 			}
+
+			std::vector<std::pair<Vector3, Vector3>> calculateEdges(const boundingArea& bounds) {
+				std::vector<std::pair<Vector3, Vector3>> edges;
+
+				Vector3 vertices[8] = {
+					{float(bounds.left), float(bounds.bottom), float(bounds.front)},
+					{float(bounds.right), float(bounds.bottom), float(bounds.front)},
+					{float(bounds.right), float(bounds.top), float(bounds.front)},
+					{float(bounds.left), float(bounds.top), float(bounds.front)},
+					{float(bounds.left), float(bounds.bottom), float(bounds.back)},
+					{float(bounds.right), float(bounds.bottom), float(bounds.back)},
+					{float(bounds.right), float(bounds.top), float(bounds.back)},
+					{float(bounds.left), float(bounds.top), float(bounds.back)}
+				};
+
+				// Define the 12 edges of the bounding box
+				edges.push_back({ vertices[0], vertices[1] });
+				edges.push_back({ vertices[1], vertices[2] });
+				edges.push_back({ vertices[2], vertices[3] });
+				edges.push_back({ vertices[3], vertices[0] });
+
+				edges.push_back({ vertices[4], vertices[5] });
+				edges.push_back({ vertices[5], vertices[6] });
+				edges.push_back({ vertices[6], vertices[7] });
+				edges.push_back({ vertices[7], vertices[4] });
+
+				edges.push_back({ vertices[0], vertices[4] });
+				edges.push_back({ vertices[1], vertices[5] });
+				edges.push_back({ vertices[2], vertices[6] });
+				edges.push_back({ vertices[3], vertices[7] });
+
+				return edges;
+			}
+
 
 #pragma endregion
 

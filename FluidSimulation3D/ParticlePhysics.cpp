@@ -1,6 +1,7 @@
 #include "ParticlePhysics.h"
 #include "chrono"
 #include "MarchingCubesConstants.h"
+#include "Debug.h"
 #include <iostream>
 #include <algorithm>
 
@@ -36,6 +37,7 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
     resetHashLookupTable();
 
     GridStart();
+    fenceEdges = calculateEdges(fence);
     //randomPositionStart(screenWidth, screenHeight);
 
     glGenBuffers(1, &particleBuffer);
@@ -116,8 +118,10 @@ void::SPH::Update(float dt) {
     //updateParticle(dt, PosList);
     updateParticleGPU(dt);
 
-
-        
+    for (int i = 0; i < fenceEdges.size(); i++) {
+        Debug::DrawLine(fenceEdges[i].first, fenceEdges[i].second);
+    }
+            
     gameWorld.marchingCubestriangleCount = numTriMarchingCubes;
 }
 
