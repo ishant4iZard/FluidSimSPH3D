@@ -41,6 +41,8 @@ layout(location = 2) uniform int hashFunctionY;
 layout(location = 3) uniform int hashFunctionZ;
 layout(location = 4) uniform float marchingCubeGridSize;
 layout(location = 5) uniform Fence fence;
+layout(location = 11) uniform ivec3 gridSizeVec;
+
 
 uint calcHash(ivec3 gridpos) {
     return (uint((gridpos.x * hashFunctionX) ^ (gridpos.y * hashFunctionY) ^ (gridpos.z * hashFunctionZ)) % particles.length());
@@ -63,29 +65,25 @@ uint zOrder(vec3 v) {
 
 void main() {
     ivec3 index = ivec3(gl_GlobalInvocationID.xyz);
-    
-    // Expand the grid size vector by one on each side
-    ivec3 gridSizeVec = ivec3(((fence.right - fence.left) / marchingCubeGridSize) + 2,
-                              ((fence.bottom - fence.top) / marchingCubeGridSize) + 2,
-                              ((fence.back - fence.front) / marchingCubeGridSize) + 2);
-
+   
     // Update bounds checking to account for the expanded grid
     if (index.x >= gridSizeVec.x || index.y >= gridSizeVec.y || index.z >= gridSizeVec.z)
         return;
 
     vec3 least = vec3(fence.left, fence.top, fence.front);
+    vec3 most = vec3(fence.right, fence.bottom, fence.back);
     // Adjust position calculation to start one grid before
     ivec3 pos = ivec3(least + vec3(index - ivec3(1)) * marchingCubeGridSize);
     ivec3 gridPos = ivec3(pos / gridSize);
 
     // Precompute the hashes for the neighboring cells
-    uint neighborHashes[27];
+    uint neighborHashes[9];
     int count = 0;
     for (int ix = -1; ix <= 1; ix++) {
         for (int iy = -1; iy <= 1; iy++) {
             for (int iz = -1; iz <= 1; iz++) {
                 //neighborHashes[count++] = calcHash(gridPos + ivec3(ix, iy, iz));
-                neighborHashes[count++] = zOrder(gridPos + ivec3(ix, iy, iz));
+                neighborHashes[count++] = zOrder(gridPos + ivec3(ix, iy, iz)) % hashLookupTable.length();;
 
             }
         }

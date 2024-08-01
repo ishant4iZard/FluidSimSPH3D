@@ -150,6 +150,8 @@ TutorialGame::~TutorialGame()	{
 	delete instancedParticleShader;
 	delete renderer;
 	delete world;
+
+	delete water;
 }
 
 void TutorialGame::UpdateGame(float dt) {
@@ -235,7 +237,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 	world->AddGameObject(sphere);
 
-	sphereMesh->SetInstanceModelMatrices(positionList, numParticles);
+	//sphereMesh->SetInstanceModelMatrices(positionList, numParticles);
 
 	return sphere;
 }

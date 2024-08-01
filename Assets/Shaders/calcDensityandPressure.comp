@@ -77,7 +77,7 @@ void main() {
             for (int iz = -1; iz <= 1; iz++) {
                 ivec3 neighborGridPos = gridpos + ivec3(ix, iy, iz);
                 //neighborHashes[count++] = calcHash(neighborGridPos);
-                neighborHashes[count++] = zOrder(neighborGridPos);
+                neighborHashes[count++] = zOrder(neighborGridPos)% hashLookupTable.length();;
 
             }
         }

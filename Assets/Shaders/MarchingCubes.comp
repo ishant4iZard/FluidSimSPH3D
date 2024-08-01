@@ -47,7 +47,7 @@ float getValue(ivec3 pos){
 }
 
 vec4 getPosition(ivec3 pos){
-    return vec4(pos - ivec3(1) * gridSize,1.0f);
+    return vec4((pos - ivec3(1)) * gridSize,1.0f);
 }
 
 

@@ -22,6 +22,8 @@ layout(location = 0) uniform float gridSize;
 layout(location = 1) uniform int hashfunctionX;
 layout(location = 2) uniform int hashfunctionY;
 layout(location = 3) uniform int hashfunctionZ;
+layout(location = 4) uniform int hashLookuptablesize;
+
 
 uint calcHash(ivec3 gridpos) {
     return (uint((gridpos.x * hashfunctionX) ^ (gridpos.y * hashfunctionY) ^ (gridpos.z * hashfunctionZ)) % particles.length());
@@ -49,6 +51,6 @@ void main() {
     ivec3 gridpos = ivec3 (particles[index].PredictedPosition.xyz / gridSize);
 
     //particles[index].Gridhash = calcHash(gridpos);
-    particles[index].Gridhash = zOrder(gridpos);
+    particles[index].Gridhash = zOrder(gridpos) % hashLookuptablesize;
 
 }

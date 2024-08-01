@@ -10,6 +10,7 @@
 namespace NCL {
 	namespace CSC8503 {
 		class SPH;
+
 		class TutorialGame		
 		{
 		public:
@@ -53,7 +54,7 @@ namespace NCL {
 			
 			
 			void InitDefaultFloor();
-			Vector3* positionList;
+			//Vector3* positionList;
 
 			GameObject* ParticleObject;
 

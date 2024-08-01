@@ -50,6 +50,12 @@ namespace NCL {
 			const unsigned int hashY = 9737333;
 			const unsigned int hashZ = 440817757;
 
+			int l2numparticles;
+			int numStages;
+
+			int sortingLocalSizeX;
+
+			Vector3i gridSizeVec;
 
 #pragma region HelperFunctionsAndConstants
 			double SmoothingKernelMultiplier;
@@ -128,13 +134,10 @@ namespace NCL {
 
 #pragma endregion
 
-			void randomPositionStart();
 			void GridStart();
-
 
 			double calcDensityGrid(int particleIndex, Vector3i gridPos);
 			Vector3 calcPressureForceGrid(int particleIndex, Vector3i gridPos);
-
 
 			void SetParticlesInGridsHashing();
 			void UpdateDensityandPressureGrid();
@@ -150,7 +153,6 @@ namespace NCL {
 			void PreMarchingCubes();
 			void MarchingCubes();
 
-
 			GLuint particleBuffer;
 			GLuint hashLookupBuffer;
 			GLuint postitionBuffer;
@@ -161,11 +163,10 @@ namespace NCL {
 			GLuint edgeTableBuffer;
 			GLuint triTableBuffer;
 
-
 			int local_size_x;
 
 			int nextHashingFrame = 0;
-			const int hashEveryNFrame = 3;
+			const int hashEveryNFrame = 4;
 
 			GameWorld& gameWorld;
 			float marchingCubesSize;

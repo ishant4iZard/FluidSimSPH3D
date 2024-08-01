@@ -12,43 +12,44 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
     numParticles = inNumParticles;
     particles.resize(numParticles);
 
-    particleRadius = 0.5f;
+    particleRadius =    0.5f;
+    smoothingRadius =   5.0f;
+    particleSpacing =   2.f;
 
-    smoothingRadius = 5.0f;
-    particleSpacing = 2.f;
+    SmoothingKernelMultiplier =             5 * (6 / (PI * pow(smoothingRadius / 100, 4)));
+    SmoothingKernelDerivativeMultiplier =   5 * (12 / (PI * pow(smoothingRadius / 100, 4)));
 
-    SmoothingKernelMultiplier = 5 * (6 / (PI * pow(smoothingRadius / 100, 4)));
-    SmoothingKernelDerivativeMultiplier = 5 * (12 / (PI * pow(smoothingRadius / 100, 4)));
-
-    marchingCubesSize = 1.f;
-
-    numCubesXaxisMarchingCubes= ((fence.right - fence.left) / marchingCubesSize) + 2;
-    numCubesYaxisMarchingCubes= ((fence.bottom - fence.top) / marchingCubesSize) + 2;
-    numCubesZaxisMarchingCubes= ((fence.back - fence.front) / marchingCubesSize) + 2;
-
+    marchingCubesSize = 2.f;
+    numCubesXaxisMarchingCubes = ((fence.right - fence.left) / marchingCubesSize) + 2;
+    numCubesYaxisMarchingCubes = ((fence.bottom - fence.top) / marchingCubesSize) + 2;
+    numCubesZaxisMarchingCubes = ((fence.back - fence.front) / marchingCubesSize) + 2;
     marchingCubesNoGrids = numCubesXaxisMarchingCubes * numCubesYaxisMarchingCubes * numCubesZaxisMarchingCubes;
 
-    //triangleData.resize(marchingCubesNoGrids * 5 * 6);
-    //NeigbourParticles.resize(marchingCubesNoGrids);
+    gridSizeVec = Vector3i( ((fence.right - fence.left) / marchingCubesSize) + 2,
+                            ((fence.bottom - fence.top) / marchingCubesSize) + 2,
+                            ((fence.back - fence.front) / marchingCubesSize) + 2);
+
+    l2numparticles = NextPowerOfTwo(numParticles);
+    numStages = static_cast<int>(std::log2(l2numparticles));
+    sortingLocalSizeX = 16;
 
     marchingCubesIsoLevel = 3;
 
-    hashLookupTable = std::vector<int>(numParticles, INT_MAX);
+    hashLookupTable = std::vector<int>(262144, INT_MAX);
     resetHashLookupTable();
 
     GridStart();
+
     fenceEdges = calculateEdges(fence);
-    //randomPositionStart(screenWidth, screenHeight);
 
     glGenBuffers(1, &particleBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, particles.size() * sizeof(Particle), particles.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, numParticles * sizeof(Particle), particles.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
 
-    // Create sortedBuffer without initializing data (just allocate space)
     glGenBuffers(1, &hashLookupBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, hashLookupBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, 300000 * sizeof(int), hashLookupTable.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, hashLookupTable.size() * sizeof(int), hashLookupTable.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
 
     glGenBuffers(1, &NeighbourParticlesBuffer);
@@ -58,7 +59,7 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
 
     glGenBuffers(1, &TriangleBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, TriangleBuffer);
-    glBufferStorage(GL_SHADER_STORAGE_BUFFER, 10000000 * 3 * sizeof(Vector4), nullptr, GL_DYNAMIC_STORAGE_BIT);
+    glBufferStorage(GL_SHADER_STORAGE_BUFFER, (7000000 / pow(marchingCubesSize,2)) * 3 * sizeof(Vector4), nullptr, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, TriangleBuffer); 
     
     glGenBuffers(1, &CounterBuffer);
@@ -76,25 +77,34 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
     glBufferData(GL_SHADER_STORAGE_BUFFER, 256 * 16 * sizeof(int), &triTable, GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, triTableBuffer);
 
-
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
 
-    //glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, particles.size() * sizeof(Particle), particles.data());
     int localsizebest = ((int)sqrt(numParticles) / 32) * 32;
 
     if (local_size_x > localsizebest)local_size_x = localsizebest;
-    //local_size_x = 256;
-
-    
-
 }
 
 SPH::~SPH()
 {
-    //delete hashLookupTable;
-    //delete[]particles;
+    glDeleteBuffers(1, &particleBuffer);
+    glDeleteBuffers(1, &hashLookupBuffer);
+    glDeleteBuffers(1, &NeighbourParticlesBuffer);
+    glDeleteBuffers(1, &TriangleBuffer);
+    glDeleteBuffers(1, &CounterBuffer);
+    glDeleteBuffers(1, &edgeTableBuffer);
+    glDeleteBuffers(1, &triTableBuffer);
 
-   
+    glDeleteProgram(setParticlesInGridsSource);
+    glDeleteProgram(parallelSortSource);
+    glDeleteProgram(HashTableSource);
+    glDeleteProgram(updateDensityPressureSource);
+    glDeleteProgram(updatePressureAccelerationSource);
+    glDeleteProgram(updateParticlesSource);
+    glDeleteProgram(resetHashTableSource);
+    glDeleteProgram(preMarchingCubesSource);
+    glDeleteProgram(MarchingCubesSource);
+
+    glFinish();
 }
 
 void::SPH::Update(float dt) {
@@ -102,8 +112,6 @@ void::SPH::Update(float dt) {
     if (nextHashingFrame == 0) {
         SetParticlesInGridsHashingGPU();
         nextHashingFrame = hashEveryNFrame;
-        PreMarchingCubes();
-        MarchingCubes();
     }
     else {
         nextHashingFrame--;
@@ -118,22 +126,15 @@ void::SPH::Update(float dt) {
     //updateParticle(dt, PosList);
     updateParticleGPU(dt);
 
+    PreMarchingCubes();
+    MarchingCubes();
+
     for (int i = 0; i < fenceEdges.size(); i++) {
         Debug::DrawLine(fenceEdges[i].first, fenceEdges[i].second);
     }
             
     gameWorld.marchingCubestriangleCount = numTriMarchingCubes;
-}
 
-void SPH::randomPositionStart()
-{
-    /*for (int i = 0; i < numParticles; i++) {
-        float x = rand() % (int)screenWidth;
-        float y = rand() % (int)screeenHeight;
-        float z = rand() % (int)screeenHeight;
-
-        particles[i].Position = Vector3(x, y);
-    }*/
 }
 
 void SPH::GridStart()
@@ -146,7 +147,7 @@ void SPH::GridStart()
     int particlesPerUnitZ = (numParticles + particlesPerUnitX * particlesPerUnitY - 1) / (particlesPerUnitX * particlesPerUnitY);
     float spacing = particleRadius * 2 + particleSpacing;
 
-    for (int i = 0; i < numParticles; i++) {
+    /*for (int i = 0; i < numParticles; i++) {
         int ix = i % particlesPerUnitX;
         int iy = (i / particlesPerUnitX) % particlesPerUnitY;
         int iz = i / (particlesPerUnitX * particlesPerUnitY);
@@ -158,7 +159,22 @@ void SPH::GridStart()
         particles[i].Position = Vector3(x, y, z);
         particles[i].PredictedPosition = Vector3(x, y, z);
 
-    }
+    }*/
+
+    std::for_each(std::execution::par_unseq, particles.begin(), particles.end(), [=](Particle& particle) mutable {
+        int i = &particle - &particles[0];  // Index of the current particle
+
+        int ix = i % particlesPerUnitX;
+        int iy = (i / particlesPerUnitX) % particlesPerUnitY;
+        int iz = i / (particlesPerUnitX * particlesPerUnitY);
+
+        float x = (ix - (particlesPerUnitX / 2.0f) + 0.5f) * spacing + offsetVec.x + (fence.right - fence.left) / 2 + (std::rand() % 100 / 100.0f) * spacing;
+        float y = (iy - (particlesPerUnitY / 2.0f) + 0.5f) * spacing + offsetVec.y + (fence.bottom - fence.top) / 2 + (std::rand() % 100 / 100.0f) * spacing;
+        float z = (iz - (particlesPerUnitZ / 2.0f) + 0.5f) * spacing + offsetVec.z + (fence.back - fence.front) / 2 + (std::rand() % 100 / 100.0f) * spacing;
+
+        particle.Position = Vector3(x, y, z);
+        particle.PredictedPosition = Vector3(x, y, z);
+        });
 }
 
 void SPH::updateParticle(float dt)
@@ -210,8 +226,6 @@ void SPH::updateParticle(float dt)
         updateParticleProperties);
 
 }
-
-
 
 double SPH::calcDensityGrid(int particleIndex, Vector3i gridPos)
 {
@@ -331,7 +345,6 @@ void SPH::SetParticlesInGridsHashing()
     }
 }
 
-
 void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
 {
     glUseProgram(setParticlesInGridsSource);
@@ -340,16 +353,13 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
     //glUniform1i(1, hashX);
     //glUniform1i(2, hashY);
     //glUniform1i(3, hashZ);
+    glUniform1i(4, hashLookupTable.size());
     int dispatchsize = (numParticles + local_size_x - 1) / local_size_x;
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
     glUseProgram(parallelSortSource);
     glUniform1i(0, numParticles);
-
-    int l2numparticles = NextPowerOfTwo(numParticles);
-
-    int numStages = static_cast<int>(std::log2(l2numparticles));
 
     for (int stageIndex = 0; stageIndex < numStages; ++stageIndex) {
         for (int stepIndex = 0; stepIndex <= stageIndex; ++stepIndex) {
@@ -359,7 +369,8 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
             glUniform1i(2, groupHeight);
             glUniform1i(3, stepIndex);
 
-            glDispatchCompute((l2numparticles / 2) / 16, 1, 1);
+            glDispatchCompute((l2numparticles /2) / sortingLocalSizeX, 1, 1);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
         }
     }
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
@@ -397,8 +408,6 @@ void NCL::CSC8503::SPH::UpdateDensityandPressureGridGPU()
 
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-
 }
 
 void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
@@ -420,8 +429,6 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
 
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-
 }
 
 void NCL::CSC8503::SPH::updateParticleGPU(float dt)
@@ -446,14 +453,6 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt)
 
     glDispatchCompute(dispatchsize, 1, 1);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-    /*glGetNamedBufferSubData(particleBuffer, 0, particles.size() * sizeof(Particle), particles.data());
-
-    std::for_each(std::execution::par_unseq,
-        particles.begin(), particles.end(), [&](const Particle& p) {
-            int i = &p - &(particles[0]);
-            PosList[i] = particles[i].Position;
-        });*/
 }
 
 void NCL::CSC8503::SPH::resetHashLookupTableGPU()
@@ -487,23 +486,17 @@ void NCL::CSC8503::SPH::PreMarchingCubes()
     glUniform1i(8, fence.top);
     glUniform1i(9, fence.front);
     glUniform1i(10, fence.back);
+    glUniform3i(11, gridSizeVec.x, gridSizeVec.y, gridSizeVec.z);
 
     glDispatchCompute((numCubesXaxisMarchingCubes + 7) / 8, (numCubesYaxisMarchingCubes + 7) / 8, (numCubesZaxisMarchingCubes + 7) / 8);
-    //glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) / 10, (numCubesZaxisMarchingCubes + 9) / 10);
 
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-    //glGetNamedBufferSubData(NeighbourParticlesBuffer, 0, marchingCubesNoGrids * sizeof(int), NeigbourParticles.data());
-
 }
 
 void NCL::CSC8503::SPH::MarchingCubes()
 {
     numTriMarchingCubes = 0;
-    //triangleData.clear();
     glNamedBufferSubData(CounterBuffer, 0, sizeof(unsigned int), &numTriMarchingCubes);
-    //glNamedBufferSubData(TriangleBuffer, 0, marchingCubesNoGrids * 5 * 6 * sizeof(Vector4), triangleData.data());
-
 
     modelViewMatrix = modelMatrix * gameWorld.GetMainCamera().BuildViewMatrix() ;
 
@@ -519,17 +512,10 @@ void NCL::CSC8503::SPH::MarchingCubes()
     glUniform1i(2, numCubesXaxisMarchingCubes);
     glUniform1i(3, numCubesYaxisMarchingCubes);
     glUniform1i(4, numCubesZaxisMarchingCubes);
-    //glUniformMatrix4fv(5, 1, false, (float*)&modelViewMatrix);
 
     glDispatchCompute((numCubesXaxisMarchingCubes + 7) / 8, (numCubesYaxisMarchingCubes + 7) / 8, (numCubesZaxisMarchingCubes + 7) / 8);
 
-    //glDispatchCompute((numCubesXaxisMarchingCubes + 9) / 10, (numCubesYaxisMarchingCubes + 9) /10, (numCubesZaxisMarchingCubes + 9) / 10);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
-
     glGetNamedBufferSubData(CounterBuffer, 0, sizeof(unsigned int), &numTriMarchingCubes);
-    //glGetNamedBufferSubData(TriangleBuffer, 0, marchingCubesNoGrids * 5 * 6 * sizeof(Vector4), triangleData.data());
-
-
-
 }
