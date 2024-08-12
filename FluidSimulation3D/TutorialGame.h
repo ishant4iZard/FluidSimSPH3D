@@ -51,7 +51,9 @@ namespace NCL {
 			Shader*		basicShader = nullptr;
 			Shader*		instancedParticleShader = nullptr;
 
-			
+			void handleInput();
+
+			void updateUI();
 			
 			void InitDefaultFloor();
 			//Vector3* positionList;

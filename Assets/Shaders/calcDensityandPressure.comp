@@ -44,15 +44,15 @@ uint spreadBits(uint v) {
 }
 
 uint zOrder(vec3 v) {
-    uint x = uint(v.x) % 64;
-    uint y = uint(v.y) % 64;
-    uint z = uint(v.z) % 64;
+    uint x = uint(v.x) % 128;
+    uint y = uint(v.y) % 128;
+    uint z = uint(v.z) % 128;
     return spreadBits(x) | (spreadBits(y) << 1) | (spreadBits(z) << 2);
 }
 
 float smoothingKernel(float h, float r) {
     if (r > h) return 0.0;
-    return smoothingKernelMultiplier * pow(((h - r) / 100.0f), 2);
+    return smoothingKernelMultiplier * pow(((h - r)/10), 2);
 }
 
 float convertDensityToPressure(float density) {
@@ -77,7 +77,7 @@ void main() {
             for (int iz = -1; iz <= 1; iz++) {
                 ivec3 neighborGridPos = gridpos + ivec3(ix, iy, iz);
                 //neighborHashes[count++] = calcHash(neighborGridPos);
-                neighborHashes[count++] = zOrder(neighborGridPos)% hashLookupTable.length();;
+                neighborHashes[count++] = zOrder(neighborGridPos) % hashLookupTable.length();;
 
             }
         }

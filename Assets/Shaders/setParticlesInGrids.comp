@@ -38,9 +38,9 @@ uint spreadBits(uint v) {
 }
 
 uint zOrder(vec3 v) {
-    uint x = uint(v.x) % 64;
-    uint y = uint(v.y) % 64;
-    uint z = uint(v.z) % 64;
+    uint x = uint(v.x) % 128;
+    uint y = uint(v.y) % 128;
+    uint z = uint(v.z) % 128;
     return spreadBits(x) | (spreadBits(y) << 1) | (spreadBits(z) << 2);
 }
 

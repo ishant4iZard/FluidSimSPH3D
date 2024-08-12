@@ -44,15 +44,15 @@ uint spreadBits(uint v) {
 }
 
 uint zOrder(vec3 v) {
-    uint x = uint(v.x) % 64;
-    uint y = uint(v.y) % 64;
-    uint z = uint(v.z) % 64;
+    uint x = uint(v.x) % 128;
+    uint y = uint(v.y) % 128;
+    uint z = uint(v.z) % 128;
     return spreadBits(x) | (spreadBits(y) << 1) | (spreadBits(z) << 2);
 }
 
 float smoothingKernelDerivative(float h, float r) {
     if(r > h) return 0.0;
-    return smoothingKernelDerivativeMultiplier * ((r - h) / 100.0f);
+    return smoothingKernelDerivativeMultiplier * ((r - h)/10);
 }
 
 
@@ -103,7 +103,7 @@ void main() {
 
             // Add viscosity
             vec3 velocityDiff = neighbor.Velocity - p.Velocity;
-            pressureForce += velocityDiff * viscosityMultiplier * (-kernelDerivative / (neighborDensity * 100.0));
+            pressureForce += velocityDiff * viscosityMultiplier * (-kernelDerivative / (neighborDensity * 10));
         }
     }
 

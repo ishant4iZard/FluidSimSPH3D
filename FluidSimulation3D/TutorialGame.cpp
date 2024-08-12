@@ -44,6 +44,8 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	particleBuffer = water->getparticleBuffer();
 	renderer->setMarchingCubesBuffer(water->getTriangleBuffer());
+
+	(static_cast<OGLShader*>(ParticleObject->GetRenderObject()->GetShader()))->setParticleBuffer(particleBuffer);
 	
 }
 
@@ -162,6 +164,9 @@ void TutorialGame::UpdateGame(float dt) {
 
 	world->UpdateWorld(dt);
 
+	handleInput();
+	updateUI();
+
 	auto start_time
 		= std::chrono::high_resolution_clock::now();
 
@@ -237,9 +242,38 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 	world->AddGameObject(sphere);
 
-	//sphereMesh->SetInstanceModelMatrices(positionList, numParticles);
+	sphereMesh->SetInstanceCount(numParticles);
 
 	return sphere;
+}
+
+void NCL::CSC8503::TutorialGame::handleInput()
+{
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::F1)) {
+		renderer->setRenderParticles(false);
+		renderer->setRenderSurface(true);
+		water->setRenderParticles(false);
+		water->setRenderSurface(true);
+	}
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::F2)) {
+		renderer->setRenderParticles(true);
+		renderer->setRenderSurface(false);
+		water->setRenderParticles(true);
+		water->setRenderSurface(false);
+	}
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::F3)) {
+		renderer->setRenderParticles(true);
+		renderer->setRenderSurface(true);
+		water->setRenderParticles(true);
+		water->setRenderSurface(true);
+	}
+}
+
+void NCL::CSC8503::TutorialGame::updateUI()
+{
+	Debug::Print("Press F1 to render surface", Vector2(5, 85), Vector4(1, 0, 0, 1));
+	Debug::Print("Press F2 to render particles", Vector2(5, 90), Vector4(1, 0, 0, 1));
+	Debug::Print("Press F3 to render both", Vector2(5, 95), Vector4(1, 0, 0, 1));
 }
 
 void TutorialGame::InitDefaultFloor() {

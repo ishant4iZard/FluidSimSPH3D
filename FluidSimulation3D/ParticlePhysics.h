@@ -42,9 +42,9 @@ namespace NCL {
 			bool gravityEnabled = 1;
 			Vector3 gravity = Vector3(0.f, -9.8f, 0.f);
 
-			double targetDensity = 100.f;
-			float pressureMultiplier = 0.001f;
-			float viscosityMultiplier = 3.f;
+			double targetDensity = 50.f;
+			float pressureMultiplier = 1.f;
+			float viscosityMultiplier = 0.7f;
 
 			const unsigned int hashX = 15823;
 			const unsigned int hashY = 9737333;
@@ -162,6 +162,7 @@ namespace NCL {
 
 			GLuint edgeTableBuffer;
 			GLuint triTableBuffer;
+			GLuint maxYbuffer;
 
 			int local_size_x;
 
@@ -179,11 +180,16 @@ namespace NCL {
 			int numCubesYaxisMarchingCubes;
 			int numCubesZaxisMarchingCubes;
 
+			int maxYparticle;
+
 			//std::vector<Vector4> triangleData;
 			//std::vector<float> NeigbourParticles;
 
 			Matrix4 modelMatrix = Matrix4();
 			Matrix4 modelViewMatrix;
+
+			bool isRenderParticles;
+			bool isRenderSurface;
 
 		public:
 
@@ -209,6 +215,14 @@ namespace NCL {
 
 			GLuint getTriangleBuffer() {
 				return TriangleBuffer;
+			}
+
+			void setRenderParticles(bool inIsRenderParticles) {
+				isRenderParticles = inIsRenderParticles;
+			}
+
+			void setRenderSurface(bool inIsRenderSurface) {
+				isRenderSurface = inIsRenderSurface;
 			}
 		};
 	}

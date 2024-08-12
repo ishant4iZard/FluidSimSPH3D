@@ -16,8 +16,8 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
     smoothingRadius =   5.0f;
     particleSpacing =   2.f;
 
-    SmoothingKernelMultiplier =             5 * (6 / (PI * pow(smoothingRadius / 100, 4)));
-    SmoothingKernelDerivativeMultiplier =   5 * (12 / (PI * pow(smoothingRadius / 100, 4)));
+    SmoothingKernelMultiplier =             5 * (6 / (PI * pow(smoothingRadius /10, 4)));
+    SmoothingKernelDerivativeMultiplier =   5 * (12 / (PI * pow(smoothingRadius /10, 4)));
 
     marchingCubesSize = 2.f;
     numCubesXaxisMarchingCubes = ((fence.right - fence.left) / marchingCubesSize) + 2;
@@ -35,12 +35,15 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
 
     marchingCubesIsoLevel = 3;
 
-    hashLookupTable = std::vector<int>(262144, INT_MAX);
+    hashLookupTable = std::vector<int>(1620235, INT_MAX);
     resetHashLookupTable();
 
     GridStart();
 
     fenceEdges = calculateEdges(fence);
+
+    isRenderParticles = false;
+    isRenderSurface = true;
 
     glGenBuffers(1, &particleBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, particleBuffer);
@@ -77,6 +80,11 @@ SPH::SPH(int inNumParticles, GameWorld& ingameWorld) :gameWorld(ingameWorld)
     glBufferData(GL_SHADER_STORAGE_BUFFER, 256 * 16 * sizeof(int), &triTable, GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, triTableBuffer);
 
+    glGenBuffers(1, &maxYbuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, maxYbuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int), &maxYparticle, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, maxYbuffer);
+
     glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &local_size_x);
 
     int localsizebest = ((int)sqrt(numParticles) / 32) * 32;
@@ -93,6 +101,7 @@ SPH::~SPH()
     glDeleteBuffers(1, &CounterBuffer);
     glDeleteBuffers(1, &edgeTableBuffer);
     glDeleteBuffers(1, &triTableBuffer);
+    glDeleteBuffers(1, &maxYbuffer);
 
     glDeleteProgram(setParticlesInGridsSource);
     glDeleteProgram(parallelSortSource);
@@ -126,8 +135,10 @@ void::SPH::Update(float dt) {
     //updateParticle(dt, PosList);
     updateParticleGPU(dt);
 
-    PreMarchingCubes();
-    MarchingCubes();
+    if (isRenderSurface) {
+        PreMarchingCubes();
+        MarchingCubes();
+    }
 
     for (int i = 0; i < fenceEdges.size(); i++) {
         Debug::DrawLine(fenceEdges[i].first, fenceEdges[i].second);
@@ -433,8 +444,12 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
 
 void NCL::CSC8503::SPH::updateParticleGPU(float dt)
 {
+    maxYparticle = 0;
+    glNamedBufferSubData(maxYbuffer, 0, sizeof(int), &maxYparticle);
+
     glUseProgram(updateParticlesSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, maxYbuffer);
 
     glUniform1i(0, fence.left);
     glUniform1i(1, fence.right);
@@ -475,6 +490,8 @@ void NCL::CSC8503::SPH::PreMarchingCubes()
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particleBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, hashLookupBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, NeighbourParticlesBuffer);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, maxYbuffer);
+
     glUniform1f(0, smoothingRadius);
     //glUniform1i(1, hashX);
     //glUniform1i(2, hashY);
@@ -497,8 +514,6 @@ void NCL::CSC8503::SPH::MarchingCubes()
 {
     numTriMarchingCubes = 0;
     glNamedBufferSubData(CounterBuffer, 0, sizeof(unsigned int), &numTriMarchingCubes);
-
-    modelViewMatrix = modelMatrix * gameWorld.GetMainCamera().BuildViewMatrix() ;
 
     glUseProgram(MarchingCubesSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, NeighbourParticlesBuffer);

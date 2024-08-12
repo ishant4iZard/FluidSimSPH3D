@@ -33,6 +33,10 @@ layout(std430, binding = 2) buffer NeighbourParticlesBuffer {
     int NeighbourParticles[];
 };
 
+layout(std430, binding = 7) buffer maxYBuffer{
+    int maxY;
+};
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
 layout(location = 0) uniform float gridSize;
@@ -57,9 +61,9 @@ uint spreadBits(uint v) {
 }
 
 uint zOrder(vec3 v) {
-    uint x = uint(v.x) % 64;
-    uint y = uint(v.y) % 64;
-    uint z = uint(v.z) % 64;
+    uint x = uint(v.x) % 128;
+    uint y = uint(v.y) % 128;
+    uint z = uint(v.z) % 128;
     return spreadBits(x) | (spreadBits(y) << 1) | (spreadBits(z) << 2);
 }
 
@@ -74,10 +78,18 @@ void main() {
     vec3 most = vec3(fence.right, fence.bottom, fence.back);
     // Adjust position calculation to start one grid before
     ivec3 pos = ivec3(least + vec3(index - ivec3(1)) * marchingCubeGridSize);
+
+    int dIndex = int(index.x * gridSizeVec.y * gridSizeVec.z + index.y * gridSizeVec.z + index.z);
+
+    if(pos.y > maxY + gridSize){
+        NeighbourParticles[dIndex] = 0;
+        return;
+    }
+
     ivec3 gridPos = ivec3(pos / gridSize);
 
     // Precompute the hashes for the neighboring cells
-    uint neighborHashes[9];
+    uint neighborHashes[27];
     int count = 0;
     for (int ix = -1; ix <= 1; ix++) {
         for (int iy = -1; iy <= 1; iy++) {
@@ -89,7 +101,7 @@ void main() {
         }
     }
 
-    int neighborCount = 0;
+    int neighborCount = 0; 
 
     // Loop through precomputed hashes and particles
     for (int i = 0; i < 27; i++) {
@@ -104,6 +116,5 @@ void main() {
         }
     }
 
-    int dIndex = int(index.x * gridSizeVec.y * gridSizeVec.z + index.y * gridSizeVec.z + index.z);
     NeighbourParticles[dIndex] = neighborCount;
 }

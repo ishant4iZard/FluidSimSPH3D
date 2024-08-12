@@ -25,6 +25,14 @@ namespace NCL {
 				marchingCubesBuffer = inBuffer;
 			}
 
+			void setRenderParticles(bool inIsRenderParticles) {
+				isRenderParticles = inIsRenderParticles;
+			}
+
+			void setRenderSurface(bool inIsRenderSurface) {
+				isRenderSurface = inIsRenderSurface;
+			}
+
 		protected:
 			void NewRenderLines();
 			void NewRenderText();
@@ -85,6 +93,9 @@ namespace NCL {
 			size_t textCount;
 
 			GLuint marchingCubesBuffer;
+
+			bool isRenderParticles;
+			bool isRenderSurface;
 		};
 	}
 }

@@ -25,6 +25,10 @@ layout(std430, binding = 0) buffer ParticleBuffer {
     Particle particles[];
 };
 
+layout(std430, binding = 7) buffer maxYBuffer{
+    int maxY;
+};
+
 layout(local_size_x = 704) in;
 
 layout(location = 0) uniform Fence fence;
@@ -85,4 +89,8 @@ void main() {
     particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left +radiusOffset), float(fence.right-radiusOffset));
     particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.top+radiusOffset), float(fence.bottom-radiusOffset));
     particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front+radiusOffset), float(fence.back-radiusOffset));
+
+    if(position.y > maxY){
+        atomicMax(maxY, int(position.y+1));
+    }
 }
