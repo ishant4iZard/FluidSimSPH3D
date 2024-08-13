@@ -34,7 +34,7 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	controller.MapAxis(4, "YLook");
 
 	
-	numParticles = 500000;
+	numParticles = 200000;
 	
 	water = new SPH(numParticles,*world);
 
