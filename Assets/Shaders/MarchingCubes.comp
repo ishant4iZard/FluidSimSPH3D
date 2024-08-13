@@ -77,7 +77,7 @@ void main() {
     
     // Use the edge table to find the active edges
     int edges = edgeTable[cubeIndex];
-    if (edges == 0) return; // No active edges, no triangles
+    if (edges == 0 || edges == 255) return; // No active edges, no triangles
 
     positions[0] = getPosition(index);
     positions[1] = getPosition(index + ivec3(1, 0, 0));
@@ -135,6 +135,8 @@ void main() {
         vec4 v0 = vertList[triTable[cubeIndex][i]];
         vec4 v1 = vertList[triTable[cubeIndex][i + 1]];
         vec4 v2 = vertList[triTable[cubeIndex][i + 2]];
+
+        if(v0 == v1 || v1 == v2 || v2 == v0) continue;
                 
         // Store the triangle vertices and normals in the TriangleBuffer
         uint triangleIndex = atomicAdd(triangleCounter, 3);

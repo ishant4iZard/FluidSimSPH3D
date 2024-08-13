@@ -155,7 +155,6 @@ namespace NCL {
 
 			GLuint particleBuffer;
 			GLuint hashLookupBuffer;
-			GLuint postitionBuffer;
 			GLuint CounterBuffer;
 			GLuint TriangleBuffer;
 			GLuint NeighbourParticlesBuffer;
