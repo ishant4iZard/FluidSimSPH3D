@@ -48,9 +48,9 @@ void SPH::InitializeParticles() {
     m_particles.resize(m_numParticles);
 
     m_particleRadius = 0.5f;
-    m_particleSmoothingRadius = 5.0f;
+    m_particleSmoothingRadius = 5.f;
     m_particleSpacing = 2.f;
-    m_particleMass = 1.0f;
+    m_particleMass = 1.f;
     m_particleDampingRate = 0.98f;
     m_isParticleGravityEnabled = 1;
     m_particleGravity = Vector3(0.f, -9.8f, 0.f);
@@ -175,9 +175,9 @@ void SPH::GridStart()
         int iy = (i / particlesPerUnitX) % particlesPerUnitY;
         int iz = i / (particlesPerUnitX * particlesPerUnitY);
 
-        float x = (ix - (particlesPerUnitX / 2.0f) + 0.5f) * spacing + offsetVec.x + (m_fence.right - m_fence.left) / 2 + (std::rand() % 100 / 100.0f) * spacing;
-        float y = (iy - (particlesPerUnitY / 2.0f) + 0.5f) * spacing + offsetVec.y + (m_fence.top - m_fence.bottom) / 2 + (std::rand() % 100 / 100.0f) * spacing;
-        float z = (iz - (particlesPerUnitZ / 2.0f) + 0.5f) * spacing + offsetVec.z + (m_fence.back - m_fence.front) / 2 + (std::rand() % 100 / 100.0f) * spacing;
+        float x = (ix - (particlesPerUnitX / 2.f) + 0.5f) * spacing + offsetVec.x + (m_fence.right - m_fence.left) / 2.f + (std::rand() % 100 / 100.f) * spacing;
+        float y = (iy - (particlesPerUnitY / 2.f) + 0.5f) * spacing + offsetVec.y + (m_fence.top - m_fence.bottom) / 2.f + (std::rand() % 100 / 100.f) * spacing;
+        float z = (iz - (particlesPerUnitZ / 2.f) + 0.5f) * spacing + offsetVec.z + (m_fence.back - m_fence.front) / 2.f + (std::rand() % 100 / 100.f) * spacing;
 
         particle.Position = Vector3(x, y, z);
         particle.PredictedPosition = Vector3(x, y, z);
@@ -185,8 +185,7 @@ void SPH::GridStart()
 }
 
 #pragma region GPUBasedFunction
-
-void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
+void SPH::SetParticlesInGridsHashingGPU()
 {
     glUseProgram(setParticlesInGridsSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_particleBuffer);
@@ -227,7 +226,7 @@ void NCL::CSC8503::SPH::SetParticlesInGridsHashingGPU()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void NCL::CSC8503::SPH::UpdateDensityandPressureGridGPU()
+void SPH::UpdateDensityandPressureGridGPU()
 {
     glUseProgram(updateDensityPressureSource);
 
@@ -249,7 +248,7 @@ void NCL::CSC8503::SPH::UpdateDensityandPressureGridGPU()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
+void SPH::UpdatePressureAccelerationGridGPU()
 {
     glUseProgram(updatePressureAccelerationSource);
 
@@ -270,7 +269,7 @@ void NCL::CSC8503::SPH::UpdatePressureAccelerationGridGPU()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void NCL::CSC8503::SPH::updateParticleGPU(float dt)
+void SPH::updateParticleGPU(float dt)
 {
     m_maxParticleHeight = 0;
     glNamedBufferSubData(m_maxHeightBuffer, 0, sizeof(int), &m_maxParticleHeight);
@@ -298,7 +297,7 @@ void NCL::CSC8503::SPH::updateParticleGPU(float dt)
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void NCL::CSC8503::SPH::resetHashLookupTableGPU()
+void SPH::resetHashLookupTableGPU()
 {
     glUseProgram(resetHashTableSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_particleBuffer);
@@ -312,7 +311,7 @@ void NCL::CSC8503::SPH::resetHashLookupTableGPU()
 
 }
 
-void NCL::CSC8503::SPH::PreMarchingCubes()
+void SPH::PreMarchingCubes()
 {
     glUseProgram(preMarchingCubesSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_particleBuffer);
@@ -338,7 +337,7 @@ void NCL::CSC8503::SPH::PreMarchingCubes()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void NCL::CSC8503::SPH::MarchingCubes()
+void SPH::MarchingCubes()
 {
     m_numTriMarchingCubes = 0;
     glNamedBufferSubData(m_counterBuffer, 0, sizeof(unsigned int), &m_numTriMarchingCubes);
@@ -404,7 +403,7 @@ void NCL::CSC8503::SPH::MarchingCubes()
 //            p.Velocity.z = -p.Velocity.z * m_particleDampingRate;
 //        }
 //
-//        p.PredictedPosition = p.Position + p.Velocity * (1 / 30.0f) + (m_isParticleGravityEnabled ? m_particleGravity : Vector3()) * 0.5f * (1 / 30.0f) * (1 / 30.0f);
+//        p.PredictedPosition = p.Position + p.Velocity * (1 / 30.f) + (m_isParticleGravityEnabled ? m_particleGravity : Vector3()) * 0.5f * (1 / 30.f) * (1 / 30.f);
 //
 //        p.PredictedPosition.x = std::clamp(p.PredictedPosition.x, (float)m_fence.left, (float)m_fence.right);
 //        p.PredictedPosition.y = std::clamp(p.PredictedPosition.y, (float)m_fence.bottom, (float)m_fence.top);

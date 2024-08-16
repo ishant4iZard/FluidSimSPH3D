@@ -36,11 +36,11 @@ namespace NCL {
 			bool			m_isParticleGravityEnabled;
 			Vector3			m_particleGravity;
 
-			double			m_particleTargetDensity;
+			float			m_particleTargetDensity;
 			float			m_particlePressureMultiplier;
 			float			m_particleViscosityMultiplier;
-			double			m_particleSmoothingKernelMultiplier;
-			double			m_particleSmoothingKernelDerivativeMultiplier;
+			float			m_particleSmoothingKernelMultiplier;
+			float			m_particleSmoothingKernelDerivativeMultiplier;
 
 			const int		kHashFrameInterval = 4;
 #pragma endregion
@@ -60,19 +60,19 @@ namespace NCL {
 			const unsigned int kHashY = 9737333;
 			const unsigned int kHashZ = 440817757;
 
-			inline double smoothingKernel(float inradius, float dst) {
+			inline float smoothingKernel(const float inradius, const float dst) const {
 				if (dst >= inradius) return 0;
-				return pow(((inradius - dst) / 100.0f), 2) * m_particleSmoothingKernelMultiplier;
+				return powf(((inradius - dst) / 100.0f), 2) * m_particleSmoothingKernelMultiplier;
 			}
-
-			inline double smoothingKernerDerivative(float inradius, float dst) {
+				   
+			inline float smoothingKernerDerivative(const float inradius, const float dst) const {
 				if (dst >= inradius)return 0;
 				return ((dst - inradius) / 100.0f) * m_particleSmoothingKernelDerivativeMultiplier;
 			}
-
-			inline double ConvertDensityToPressure(double density) {
-				double deltaDensity = density - m_particleTargetDensity;
-				double m_pressure = deltaDensity * m_particlePressureMultiplier;
+				   
+			inline float ConvertDensityToPressure(const float density) const {
+				float deltaDensity = density - m_particleTargetDensity;
+				float m_pressure = deltaDensity * m_particlePressureMultiplier;
 				return m_pressure;
 			}
 
@@ -85,8 +85,8 @@ namespace NCL {
 				return a.Normalised();
 			}
 
-			inline int cellHash(int x, int y, int z) {
-				return ((long)z * kHashZ + (long)y * kHashY + (long)x * kHashX) % m_numParticles;
+			inline int cellHash(int x, int y, int z) const {
+				return ((((long)x * kHashX)) ^ ((long)y * kHashY) ^ ((long)z * kHashZ)) % m_numParticles;
 			}
 
 			inline void resetHashLookupTable() {
@@ -195,13 +195,13 @@ namespace NCL {
 
 			void Update(float dt);
 
-			unsigned int getNumParticles(){ return m_numParticles; }
+			unsigned int getNumParticles() const { return m_numParticles; }
 
-			GLuint getparticleBuffer() {
+			GLuint getparticleBuffer() const  {
 				return m_particleBuffer;
 			}
 
-			GLuint getTriangleBuffer() {
+			GLuint getTriangleBuffer() const  {
 				return m_triangleBuffer;
 			}
 

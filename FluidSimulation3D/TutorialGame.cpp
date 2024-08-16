@@ -67,7 +67,7 @@ void TutorialGame::InitialiseAssets() {
 	InitCamera();
 }
 
-void NCL::CSC8503::TutorialGame::InitComputeShaders()
+void TutorialGame::InitComputeShaders()
 {
 	/*setParticlesInGridsSource =			CompileComputeShader("setParticlesInGrids.comp");
 	parallelSortSource =				CompileComputeShader("parallelSort.comp");
@@ -231,7 +231,7 @@ void NCL::CSC8503::TutorialGame::handleInput()
 	}
 }
 
-void NCL::CSC8503::TutorialGame::updateUI()
+void TutorialGame::updateUI()
 {
 	Debug::Print("Press F1 to render surface", Vector2(5, 85), Vector4(1, 0, 0, 1));
 	Debug::Print("Press F2 to render particles", Vector2(5, 90), Vector4(1, 0, 0, 1));
