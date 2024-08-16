@@ -74,8 +74,8 @@ void main() {
     if (index.x >= gridSizeVec.x || index.y >= gridSizeVec.y || index.z >= gridSizeVec.z)
         return;
 
-    vec3 least = vec3(fence.left, fence.top, fence.front);
-    vec3 most = vec3(fence.right, fence.bottom, fence.back);
+    vec3 least = vec3(fence.left, fence.bottom, fence.front);
+    vec3 most = vec3(fence.right, fence.top, fence.back);
     // Adjust position calculation to start one grid before
     ivec3 pos = ivec3(least + vec3(index - ivec3(1)) * marchingCubeGridSize);
 

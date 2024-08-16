@@ -8,8 +8,8 @@
 struct boundingArea {
 	int left = 0;
 	int right = 250;
-	int bottom = 400;
-	int top = 0;
+	int bottom = 0;
+	int top = 400;
 	int front = 0;
 	int back = 350;
 };
@@ -23,61 +23,60 @@ namespace NCL {
 		{
 		private:
 
-#pragma region particles
-			std::vector<Particle> particles;
+			std::vector<Particle> m_particles;
+			std::vector<int> m_hashLookupTable;
 
-			int numParticles;
-			float particleRadius;
-			float smoothingRadius;
-			float particleSpacing;
-			float mass = 1.0f;
-			float dampingRate = 0.98f;
+#pragma region particleSettings
+			unsigned int	m_numParticles;
+			float			m_particleRadius;
+			float			m_particleSmoothingRadius;
+			float			m_particleSpacing;
+			float			m_particleMass;
+			float			m_particleDampingRate;
+			bool			m_isParticleGravityEnabled;
+			Vector3			m_particleGravity;
 
+			double			m_particleTargetDensity;
+			float			m_particlePressureMultiplier;
+			float			m_particleViscosityMultiplier;
+			double			m_particleSmoothingKernelMultiplier;
+			double			m_particleSmoothingKernelDerivativeMultiplier;
+
+			const int		kHashFrameInterval = 4;
 #pragma endregion
-			std::vector<int> hashLookupTable;
 
-			boundingArea fence;
-			std::vector<std::pair<Vector3, Vector3>> fenceEdges;
+			int				nextHashingFrame = 0;
+			boundingArea	m_fence;
+			std::vector<std::pair<Vector3, Vector3>> m_fenceEdges;
 
-			bool gravityEnabled = 1;
-			Vector3 gravity = Vector3(0.f, -9.8f, 0.f);
-
-			double targetDensity = 50.f;
-			float pressureMultiplier = 1.f;
-			float viscosityMultiplier = 0.7f;
-
-			const unsigned int hashX = 15823;
-			const unsigned int hashY = 9737333;
-			const unsigned int hashZ = 440817757;
-
+#pragma region HelperFunctionsAndVariables
 			int l2numparticles;
 			int numStages;
 
-			int sortingLocalSizeX;
+			int m_sortingLocalSizeX;
+			int m_localSizeX;
 
-			Vector3i gridSizeVec;
+			const unsigned int kHashX = 15823;
+			const unsigned int kHashY = 9737333;
+			const unsigned int kHashZ = 440817757;
 
-#pragma region HelperFunctionsAndConstants
-			double SmoothingKernelMultiplier;
-			double SmoothingKernelDerivativeMultiplier;
-
-			double smoothingKernel(float inradius, float dst) {
+			inline double smoothingKernel(float inradius, float dst) {
 				if (dst >= inradius) return 0;
-				return pow(((inradius - dst) / 100.0f), 2) * SmoothingKernelMultiplier;
+				return pow(((inradius - dst) / 100.0f), 2) * m_particleSmoothingKernelMultiplier;
 			}
 
-			double smoothingKernerDerivative(float inradius, float dst) {
+			inline double smoothingKernerDerivative(float inradius, float dst) {
 				if (dst >= inradius)return 0;
-				return ((dst - inradius) / 100.0f) * SmoothingKernelDerivativeMultiplier;
+				return ((dst - inradius) / 100.0f) * m_particleSmoothingKernelDerivativeMultiplier;
 			}
 
-			double ConvertDensityToPressure(double density) {
-				double deltaDensity = density - targetDensity;
-				double m_pressure = deltaDensity * pressureMultiplier;
+			inline double ConvertDensityToPressure(double density) {
+				double deltaDensity = density - m_particleTargetDensity;
+				double m_pressure = deltaDensity * m_particlePressureMultiplier;
 				return m_pressure;
 			}
 
-			Vector3 GetRandomDir() {
+			inline Vector3 GetRandomDir() {
 				float x = (rand() % 100) / 100.0f;
 				float y = (rand() % 100) / 100.0f;
 				float z = (rand() % 100) / 100.0f;
@@ -86,15 +85,15 @@ namespace NCL {
 				return a.Normalised();
 			}
 
-			int cellHash(int x, int y, int z) {
-				return ((long)z * hashZ + (long)y * hashY + (long)x * hashX) % numParticles;
+			inline int cellHash(int x, int y, int z) {
+				return ((long)z * kHashZ + (long)y * kHashY + (long)x * kHashX) % m_numParticles;
 			}
 
-			void resetHashLookupTable() {
-				std::fill(std::execution::par, hashLookupTable.begin(), hashLookupTable.end(), INT_MAX);
+			inline void resetHashLookupTable() {
+				std::fill(std::execution::par, m_hashLookupTable.begin(), m_hashLookupTable.end(), INT_MAX);
 			}
 
-			int NextPowerOfTwo(int n) {
+			inline int NextPowerOfTwo(int n) {
 				return pow(2, ceil(log2(n)));
 			}
 
@@ -131,19 +130,22 @@ namespace NCL {
 				return edges;
 			}
 
-
 #pragma endregion
 
 			void GridStart();
 
-			double calcDensityGrid(int particleIndex, Vector3i gridPos);
-			Vector3 calcPressureForceGrid(int particleIndex, Vector3i gridPos);
+			// CPU-Based Functions (currently redacted)
+#pragma region CPUFunction
+//			double calcDensityGrid(int particleIndex, Vector3i gridPos);
+//			Vector3 calcPressureForceGrid(int particleIndex, Vector3i gridPos);
+//			void SetParticlesInGridsHashing();
+//			void UpdateDensityandPressureGrid();
+//			void UpdatePressureAccelerationGrid();
+//			void updateParticle(float dt);
+#pragma endregion
 
-			void SetParticlesInGridsHashing();
-			void UpdateDensityandPressureGrid();
-			void UpdatePressureAccelerationGrid();
-			void updateParticle(float dt);
-
+			// GPU-Based Functions
+#pragma region GPUFunction
 			void SetParticlesInGridsHashingGPU();
 			void UpdateDensityandPressureGridGPU();
 			void UpdatePressureAccelerationGridGPU();
@@ -152,49 +154,72 @@ namespace NCL {
 
 			void PreMarchingCubes();
 			void MarchingCubes();
+#pragma endregion
 
-			GLuint particleBuffer;
-			GLuint hashLookupBuffer;
-			GLuint CounterBuffer;
-			GLuint TriangleBuffer;
-			GLuint NeighbourParticlesBuffer;
+#pragma region Buffers
+			GLuint m_particleBuffer;
+			GLuint m_hashLookupBuffer;
+			GLuint m_counterBuffer;
+			GLuint m_triangleBuffer;
+			GLuint m_neighbourParticlesBuffer;
+			GLuint m_maxHeightBuffer;
 
-			GLuint edgeTableBuffer;
-			GLuint triTableBuffer;
-			GLuint maxYbuffer;
-
-			int local_size_x;
-
-			int nextHashingFrame = 0;
-			const int hashEveryNFrame = 4;
+			//marching cubes constant buffers
+			GLuint m_edgeTableBuffer;
+			GLuint m_triTableBuffer;
+#pragma endregion
 
 			GameWorld& gameWorld;
-			float marchingCubesSize;
-			int marchingCubesNoGrids;
-			int marchingCubesIsoLevel;
 
-			int numTriMarchingCubes;
+#pragma region marchingCubesVariables
+			float m_marchingCubesSize;
+			int m_marchingCubesNoGrids;
+			int m_marchingCubesIsoLevel;
 
-			int numCubesXaxisMarchingCubes;
-			int numCubesYaxisMarchingCubes;
-			int numCubesZaxisMarchingCubes;
+			int m_numTriMarchingCubes;
 
-			int maxYparticle;
+			int m_numCubesXaxisMarchingCubes;
+			int m_numCubesYaxisMarchingCubes;
+			int m_numCubesZaxisMarchingCubes;
 
-			//std::vector<Vector4> triangleData;
-			//std::vector<float> NeigbourParticles;
+			bool m_isRenderParticles;
+			bool m_isRenderSurface;
+#pragma endregion
 
-			Matrix4 modelMatrix = Matrix4();
-			Matrix4 modelViewMatrix;
-
-			bool isRenderParticles;
-			bool isRenderSurface;
+			int m_maxParticleHeight;
 
 		public:
 
-			SPH(int inNumParticles, GameWorld& ingameWorld);
+			SPH(GameWorld& ingameWorld);
 			~SPH();
 
+			void Update(float dt);
+
+			unsigned int getNumParticles(){ return m_numParticles; }
+
+			GLuint getparticleBuffer() {
+				return m_particleBuffer;
+			}
+
+			GLuint getTriangleBuffer() {
+				return m_triangleBuffer;
+			}
+
+			void setRenderParticles(bool inIsRenderParticles) {
+				m_isRenderParticles = inIsRenderParticles;
+			}
+
+			void setRenderSurface(bool inIsRenderSurface) {
+				m_isRenderSurface = inIsRenderSurface;
+			}
+
+		private:
+			void InitializeParticles();
+			void InitializeMarchingCubesVariables();
+			void InitializeHashingAndSortingVariables();
+			void InitializeOpenGLBuffers();
+
+		public:
 			GLuint setParticlesInGridsSource;
 			GLuint parallelSortSource;
 			GLuint HashTableSource;
@@ -204,25 +229,6 @@ namespace NCL {
 			GLuint resetHashTableSource;
 			GLuint preMarchingCubesSource;
 			GLuint MarchingCubesSource;
-
-
-			void Update(float dt);
-
-			GLuint getparticleBuffer() {
-				return particleBuffer;
-			}
-
-			GLuint getTriangleBuffer() {
-				return TriangleBuffer;
-			}
-
-			void setRenderParticles(bool inIsRenderParticles) {
-				isRenderParticles = inIsRenderParticles;
-			}
-
-			void setRenderSurface(bool inIsRenderSurface) {
-				isRenderSurface = inIsRenderSurface;
-			}
 		};
 	}
 }

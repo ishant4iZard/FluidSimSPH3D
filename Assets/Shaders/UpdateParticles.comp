@@ -54,12 +54,12 @@ void main() {
 
     float radiusOffset = 0.0001f + particleRadius + smoothingRadius;
 
-    if (position.y >= fence.bottom - particleRadius - smoothingRadius) {
-        position.y = fence.bottom - radiusOffset;
+    if (position.y >= fence.top - particleRadius - smoothingRadius) {
+        position.y = fence.top - radiusOffset;
         velocity.y = -velocity.y * dampingRate;
     }
-    if (position.y <= fence.top + particleRadius + smoothingRadius) {
-        position.y = fence.top + radiusOffset;
+    if (position.y <= fence.bottom + particleRadius + smoothingRadius) {
+        position.y = fence.bottom + radiusOffset;
         velocity.y = -velocity.y * dampingRate;
     }
     if (position.x >= fence.right - particleRadius -smoothingRadius) {

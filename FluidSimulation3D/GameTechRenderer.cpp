@@ -66,8 +66,8 @@ GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetW
 	SetDebugStringBufferSizes(10000);
 	SetDebugLineBufferSizes(1000);
 
-	isRenderParticles = false;
-	isRenderSurface = true;
+	m_isRenderParticles = false;
+	m_isRenderSurface = true;
 }
 
 GameTechRenderer::~GameTechRenderer()	{
@@ -123,9 +123,9 @@ void GameTechRenderer::RenderFrame() {
 	RenderShadowMap();
 	RenderSkybox();
 	RenderCamera();
-	if (isRenderParticles)
+	if (m_isRenderParticles)
 		RenderInstancedRenderObject();
-	if(isRenderSurface)
+	if(m_isRenderSurface)
 		RenderMarchingCubesMesh();
 	glDisable(GL_CULL_FACE); //Todo - text indices are going the wrong way...
 	glDisable(GL_BLEND);

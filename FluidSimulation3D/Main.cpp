@@ -1,7 +1,4 @@
 #include "Window.h"
-
-#include "Debug.h"
-
 #include "TutorialGame.h"
 
 using namespace NCL;
@@ -17,8 +14,6 @@ int main() {
 	if (!w->HasInitialised()) {
 		return -1;
 	}	
-
-	
 
 	w->ShowOSPointer(false);
 	w->LockMouseToWindow(true);
@@ -43,10 +38,11 @@ int main() {
 			w->SetWindowPosition(0, 0);
 		}
 
-		w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
+		w->SetTitle("Frame time:" + std::to_string(1000.0f * dt) + "ms");
 
 		g->UpdateGame(dt);
 	}
 	Window::DestroyGameWindow();
 	delete g;
+
 }

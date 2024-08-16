@@ -55,15 +55,14 @@ namespace NCL {
 
 			void updateUI();
 			
-			void InitDefaultFloor();
+			void InitParticle();
 			//Vector3* positionList;
 
 			GameObject* ParticleObject;
 
 			SPH* water;
-			unsigned int numParticles;
 
-			GLuint particleBuffer;
+			GLuint m_particleBuffer;
 			
 		private:
 

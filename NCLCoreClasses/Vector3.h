@@ -34,13 +34,12 @@ namespace NCL::Maths {
 		}
 
 		void abs() {
-			std::abs(x);
-			std::abs(y);
-			std::abs(z);
-
+			x = std::abs(x);
+			y = std::abs(y);
+			z = std::abs(z);
 		}
 
-		void			Normalise() {
+		void Normalise() {
 			float length = Length();
 
 			if (length != 0.0f) {

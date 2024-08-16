@@ -32,20 +32,17 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 
 	controller.MapAxis(3, "XLook");
 	controller.MapAxis(4, "YLook");
-
 	
-	numParticles = 200000;
-	
-	water = new SPH(numParticles,*world);
+	water = new SPH(*world);
 
 	InitialiseAssets();
 
-	InitDefaultFloor();
+	InitParticle();
 
-	particleBuffer = water->getparticleBuffer();
+	m_particleBuffer = water->getparticleBuffer();
 	renderer->setMarchingCubesBuffer(water->getTriangleBuffer());
 
-	(static_cast<OGLShader*>(ParticleObject->GetRenderObject()->GetShader()))->setParticleBuffer(particleBuffer);
+	(static_cast<OGLShader*>(ParticleObject->GetRenderObject()->GetShader()))->setParticleBuffer(m_particleBuffer);
 	
 }
 
@@ -167,47 +164,12 @@ void TutorialGame::UpdateGame(float dt) {
 	handleInput();
 	updateUI();
 
-	auto start_time
-		= std::chrono::high_resolution_clock::now();
-
 	water->Update(dt);
 
-	auto physics_end_time
-		= std::chrono::high_resolution_clock::now();
-
-	auto taken_time_physics = std::chrono::duration_cast<
-		std::chrono::milliseconds>(
-			physics_end_time - start_time)
-		.count();
-
-
-	//positionList[1000] = positionList[1000] + Vector3(0, 0, 1) * dt;
-
-	//ParticleObject->GetRenderObject()->GetMesh()->UpdateParticlesPositionInstance(positionList, numParticles);
-
-	//OGLShader* shader = (OGLShader*)(ParticleObject->GetRenderObject()->GetShader());
-	//shader->setParticleBuffer(particleBuffer);
-
 	renderer->Update(dt);
-
 	renderer->Render();
-
 	Debug::UpdateRenderables(dt);
-	auto render_end_time
-		= std::chrono::high_resolution_clock::now();
 
-	auto taken_time_render = std::chrono::duration_cast<
-		std::chrono::milliseconds>(
-			render_end_time - physics_end_time)
-		.count();
-
-	
-
-	std::cout << "\r"
-		<< "phy execution time: " << taken_time_physics
-		<< "ms "
-		<< "ren execution time: " << taken_time_render
-		<< "ms ";
 }
 
 void TutorialGame::InitCamera() {
@@ -242,7 +204,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 	world->AddGameObject(sphere);
 
-	sphereMesh->SetInstanceCount(numParticles);
+	sphereMesh->SetInstanceCount(water->getNumParticles());
 
 	return sphere;
 }
@@ -276,7 +238,7 @@ void NCL::CSC8503::TutorialGame::updateUI()
 	Debug::Print("Press F3 to render both", Vector2(5, 95), Vector4(1, 0, 0, 1));
 }
 
-void TutorialGame::InitDefaultFloor() {
+void TutorialGame::InitParticle() {
 	ParticleObject = AddSphereToWorld(Vector3(0, 0, 0), 0.5f);
 }
 

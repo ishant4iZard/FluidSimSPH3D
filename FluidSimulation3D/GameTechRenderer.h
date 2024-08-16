@@ -26,11 +26,11 @@ namespace NCL {
 			}
 
 			void setRenderParticles(bool inIsRenderParticles) {
-				isRenderParticles = inIsRenderParticles;
+				m_isRenderParticles = inIsRenderParticles;
 			}
 
 			void setRenderSurface(bool inIsRenderSurface) {
-				isRenderSurface = inIsRenderSurface;
+				m_isRenderSurface = inIsRenderSurface;
 			}
 
 		protected:
@@ -94,8 +94,8 @@ namespace NCL {
 
 			GLuint marchingCubesBuffer;
 
-			bool isRenderParticles;
-			bool isRenderSurface;
+			bool m_isRenderParticles;
+			bool m_isRenderSurface;
 		};
 	}
 }

@@ -21,9 +21,15 @@ set(Source_Files
 
 source_group("Source Files" FILES ${Source_Files})
 
+set(SHADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Assets/Shaders")
+file(GLOB ComputeShaders "${SHADER_DIR}/*.comp")
+
+source_group("Compute Shaders" FILES ${ComputeShaders})
+
 set(ALL_FILES
     ${Header_Files}
     ${Source_Files}
+    ${ComputeShaders}
 )
 
 
