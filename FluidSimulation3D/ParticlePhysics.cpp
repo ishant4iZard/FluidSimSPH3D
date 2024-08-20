@@ -63,7 +63,7 @@ void SPH::InitializeParticles() {
 }
 
 void SPH::InitializeMarchingCubesVariables() {
-    m_marchingCubesSize = 2.f;
+    m_marchingCubesSize = 5.f;
     m_numCubesXaxisMarchingCubes = floor((m_fence.right - m_fence.left) / m_marchingCubesSize) + 2;
     m_numCubesYaxisMarchingCubes = floor((m_fence.top - m_fence.bottom) / m_marchingCubesSize) + 2;
     m_numCubesZaxisMarchingCubes = floor((m_fence.back - m_fence.front) / m_marchingCubesSize) + 2;

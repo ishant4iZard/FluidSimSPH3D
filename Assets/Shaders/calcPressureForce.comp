@@ -51,8 +51,7 @@ uint zOrder(vec3 v) {
 }
 
 float smoothingKernelDerivative(float h, float r) {
-    if(r > h) return 0.0;
-    return smoothingKernelDerivativeMultiplier * ((r - h)/10);
+    return smoothingKernelDerivativeMultiplier * ((r - h)/10) * step(r, h);
 }
 
 
@@ -84,26 +83,26 @@ void main() {
     for (int i = 0; i < 27; i++) {
         uint key = neighborHashes[i];
         int startIndex = hashLookupTable[key];
-        for (int j = startIndex; j < particles.length(); j++) {
+        float mask = 1;
+        for (int j = startIndex; j < particles.length() && mask != 0; j++) {
             Particle neighbor = particles[j];
-            if (key != neighbor.Gridhash) break;
-            if (index == j) continue;
+            mask = float(key == neighbor.Gridhash);
 
             vec3 offsetVec = neighbor.PredictedPosition - p.PredictedPosition;
             float distance = length(offsetVec);
 
-            if (distance > gridSize) continue;
+            if (distance > gridSize || index == j) continue;
 
             vec3 dir = distance == 0.0 ? normalize(neighbor.Position - particles[j-1].Position) : offsetVec / distance;
 
             float kernelDerivative = smoothingKernelDerivative(gridSize, distance);
             float neighborDensity = neighbor.density;
             float sharedPressure = (neighbor.pressure + p.pressure) / 2.0;
-            pressureForce += dir * (sharedPressure * kernelDerivative * mass / neighborDensity);
+            pressureForce += dir * (sharedPressure * kernelDerivative * mass / neighborDensity) * mask;
 
             // Add viscosity
             vec3 velocityDiff = neighbor.Velocity - p.Velocity;
-            pressureForce += velocityDiff * viscosityMultiplier * (-kernelDerivative / (neighborDensity * 10));
+            pressureForce += velocityDiff * viscosityMultiplier * (-kernelDerivative / (neighborDensity * 10)) * mask;
         }
     }
 

@@ -46,9 +46,8 @@ void main() {
     Particle p = particles[index];
 
     vec3 velocity = p.Velocity + p.PressureAcceleration * dt;
-    if (gravityEnabled) {
-        velocity += gravity * dt;
-    }
+    
+    velocity += gravity * dt * float(gravityEnabled);
 
     vec3 position = p.Position + velocity * dt;
 
@@ -86,8 +85,8 @@ void main() {
     particles[index].Velocity = velocity;
     particles[index].Position = position;
 
-    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left +radiusOffset), float(fence.right-radiusOffset));
-    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.top+radiusOffset), float(fence.bottom-radiusOffset));
+    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left+radiusOffset), float(fence.right-radiusOffset));
+    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.bottom+radiusOffset), float(fence.top-radiusOffset));
     particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front+radiusOffset), float(fence.back-radiusOffset));
 
     if(position.y > maxY){

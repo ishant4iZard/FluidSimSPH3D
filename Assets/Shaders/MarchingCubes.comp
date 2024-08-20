@@ -5,7 +5,7 @@ layout(std430, binding = 2) buffer NeighbourParticlesBuffer {
 };
 
 layout(std430, binding = 3) buffer TriangleBuffer {
-    vec4 triangles[]; // Store triangle vertices, each as vec4 (position.xyz and normal)
+    vec4 triangles[]; // Store triangle vertices, each as vec4 (position.xyz)
 };
 
 layout(std430, binding = 4) buffer CounterBuffer {
@@ -33,15 +33,11 @@ layout(location = 2) uniform int gridWidth;
 layout(location = 3) uniform int gridHeight;
 layout(location = 4) uniform int gridDepth;
 
-vec4 vertexInterp(float isolevel, vec4 p1, vec4 p2, float valp1, float valp2) {
+vec4 vertexInterp(vec4 p1, vec4 p2, float valp1, float valp2) {
     float mu;
     vec4 p;
-
-    if (abs(isolevel - valp1) < 0.00001) return p1;
-    if (abs(isolevel - valp2) < 0.00001) return p2;
-    if (abs(valp1 - valp2) < 0.00001) return p1;
     
-    mu = (isolevel - valp1) / (valp2 - valp1);
+    mu = (isolevel - valp1) / (valp2 - valp1 + 0.00001);
     p = p1 + mu * (p2 - p1);
 
     return p;
@@ -52,14 +48,13 @@ float getValue(ivec3 pos){
 }
 
 vec4 getPosition(ivec3 pos){
-    return vec4((pos - ivec3(1)) * gridSize,1.0f);
+    return vec4((pos) * gridSize,1.0f);
 }
-
 
 void main() {
     ivec3 index = ivec3(gl_GlobalInvocationID.xyz);
 
-    if (index.x >= gridWidth || index.y >= gridHeight-1 || index.z >= gridDepth)
+    if (index.x > gridWidth-1 || index.y > gridHeight-1 || index.z > gridDepth-1)
         return;
 
     int cubeIndex = 0;
@@ -93,49 +88,45 @@ void main() {
     positions[6] = getPosition(index + ivec3(1, 1, 1));
     positions[7] = getPosition(index + ivec3(0, 1, 1));
 
-    if(positions[0].y > maxY + gridSize){
-        return;
-    }
-
     // Determine the cube index based on the isolevel
     
     // Compute the vertices on the active edges
     vec4 vertList[12];
     if ((edges & 1) != 0){
-        vertList[0] = vertexInterp(isolevel, positions[0], positions[1], values[0], values[1]);
+        vertList[0] = vertexInterp(positions[0], positions[1], values[0], values[1]);
     }
     if ((edges & 2) != 0) {
-        vertList[1] = vertexInterp(isolevel, positions[1], positions[2], values[1], values[2]);
+        vertList[1] = vertexInterp(positions[1], positions[2], values[1], values[2]);
     }
     if ((edges & 4) != 0) {
-        vertList[2] = vertexInterp(isolevel, positions[2], positions[3], values[2], values[3]);
+        vertList[2] = vertexInterp(positions[2], positions[3], values[2], values[3]);
     }
     if ((edges & 8) != 0){ 
-        vertList[3] = vertexInterp(isolevel, positions[3], positions[0], values[3], values[0]);
+        vertList[3] = vertexInterp(positions[3], positions[0], values[3], values[0]);
     }
     if ((edges & 16) != 0){
-        vertList[4] = vertexInterp(isolevel, positions[4], positions[5], values[4], values[5]);
+        vertList[4] = vertexInterp(positions[4], positions[5], values[4], values[5]);
 }
     if ((edges & 32) != 0){
-        vertList[5] = vertexInterp(isolevel, positions[5], positions[6], values[5], values[6]);
+        vertList[5] = vertexInterp(positions[5], positions[6], values[5], values[6]);
     }
     if ((edges & 64) != 0) {
-        vertList[6] = vertexInterp(isolevel, positions[6], positions[7], values[6], values[7]);
+        vertList[6] = vertexInterp(positions[6], positions[7], values[6], values[7]);
     }
     if ((edges & 128) != 0) {
-        vertList[7] = vertexInterp(isolevel, positions[7], positions[4], values[7], values[4]);
+        vertList[7] = vertexInterp(positions[7], positions[4], values[7], values[4]);
     }
     if ((edges & 256) != 0) {
-        vertList[8] = vertexInterp(isolevel, positions[0], positions[4], values[0], values[4]);
+        vertList[8] = vertexInterp(positions[0], positions[4], values[0], values[4]);
     }
     if ((edges & 512) != 0) {
-        vertList[9] = vertexInterp(isolevel, positions[1], positions[5], values[1], values[5]);
+        vertList[9] = vertexInterp(positions[1], positions[5], values[1], values[5]);
     }
     if ((edges & 1024) != 0) {
-        vertList[10] = vertexInterp(isolevel, positions[2], positions[6], values[2], values[6]);
+        vertList[10] = vertexInterp(positions[2], positions[6], values[2], values[6]);
     }
     if ((edges & 2048) != 0) {
-        vertList[11] = vertexInterp(isolevel, positions[3], positions[7], values[3], values[7]);
+        vertList[11] = vertexInterp(positions[3], positions[7], values[3], values[7]);
 
     }
     

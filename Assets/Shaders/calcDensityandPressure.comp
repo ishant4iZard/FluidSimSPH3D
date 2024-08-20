@@ -51,8 +51,7 @@ uint zOrder(vec3 v) {
 }
 
 float smoothingKernel(float h, float r) {
-    if (r > h) return 0.0;
-    return smoothingKernelMultiplier * pow(((h - r)/10), 2);
+    return smoothingKernelMultiplier * pow(((h - r)/10), 2) * step(r, h);
 }
 
 float convertDensityToPressure(float density) {
@@ -87,13 +86,13 @@ void main() {
     for (int i = 0; i < 27; i++) {
         uint key = neighborHashes[i];
         int startIndex = hashLookupTable[key];
-        for (int j = startIndex; j < particles.length(); j++) {
+        float mask = 1;
+        for (int j = startIndex; j < particles.length() && mask != 0; j++) {
             Particle neighbor = particles[j];
-            if (key != neighbor.Gridhash) break;
-
+            mask = float(key == neighbor.Gridhash);
             float distance = length(neighbor.PredictedPosition - p.PredictedPosition);
             float influence = smoothingKernel(gridSize, distance);
-            density += mass * influence;
+            density += mass * influence * mask;
         }
     }
 
