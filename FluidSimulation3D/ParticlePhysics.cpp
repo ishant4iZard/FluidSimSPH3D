@@ -44,7 +44,7 @@ SPH::~SPH()
 }
 
 void SPH::InitializeParticles() {
-    m_numParticles = 500000;
+    m_numParticles = 200000;
     m_particles.resize(m_numParticles);
 
     m_particleRadius = 0.5f;
@@ -63,7 +63,7 @@ void SPH::InitializeParticles() {
 }
 
 void SPH::InitializeMarchingCubesVariables() {
-    m_marchingCubesSize = 5.f;
+    m_marchingCubesSize = 2.f;
     m_numCubesXaxisMarchingCubes = floor((m_fence.right - m_fence.left) / m_marchingCubesSize) + 2;
     m_numCubesYaxisMarchingCubes = floor((m_fence.top - m_fence.bottom) / m_marchingCubesSize) + 2;
     m_numCubesZaxisMarchingCubes = floor((m_fence.back - m_fence.front) / m_marchingCubesSize) + 2;
