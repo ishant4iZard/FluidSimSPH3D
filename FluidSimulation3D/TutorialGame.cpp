@@ -13,16 +13,8 @@ using namespace CSC8503;
 
 TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
 	world		= new GameWorld();
-#ifdef USEVULKAN
-	renderer	= new GameTechVulkanRenderer(*world);
-	renderer->Init();
-	renderer->InitStructures();
-#else 
-	renderer = new GameTechRenderer(*world);
-#endif
 
-	useGravity		= true;
-	inSelectionMode = false;
+	renderer = new GameTechRenderer(*world);
 
 	world->GetMainCamera().SetController(controller);
 
@@ -42,7 +34,8 @@ TutorialGame::TutorialGame() : controller(*Window::GetWindow()->GetKeyboard(), *
 	m_particleBuffer = water->getparticleBuffer();
 	renderer->setMarchingCubesBuffer(water->getTriangleBuffer());
 
-	(static_cast<OGLShader*>(ParticleObject->GetRenderObject()->GetShader()))->setParticleBuffer(m_particleBuffer);
+	(static_cast<OGLShader*>(ParticleObject->GetRenderObject()->GetShader()))
+		->setParticleBuffer(m_particleBuffer);
 	
 }
 
@@ -55,10 +48,9 @@ for this module, even in the coursework, but you can add it if you like!
 
 */
 void TutorialGame::InitialiseAssets() {
-	sphereMesh	= renderer->LoadMesh("Cube.msh");
+	cubeMesh	= renderer->LoadMesh("Cube.msh");
 
 	basicTex	= renderer->LoadTexture("checkerboard.png");
-	sandTex		= renderer->LoadTexture("sand.jpg");
 	basicShader = renderer->LoadShader("scene.vert", "scene.frag");
 	instancedParticleShader = renderer->LoadShader("sceneInstanced.vert", "scene.frag");
 
@@ -69,22 +61,15 @@ void TutorialGame::InitialiseAssets() {
 
 void TutorialGame::InitComputeShaders()
 {
-	/*setParticlesInGridsSource =			CompileComputeShader("setParticlesInGrids.comp");
-	parallelSortSource =				CompileComputeShader("parallelSort.comp");
-	updateDensityPressureSource =		CompileComputeShader("updateDensityPressure.comp");
-	updatePressureAccelerationSource =	CompileComputeShader("updatePressureAcceleration.comp");
-	updateParticlesSource =				CompileComputeShader("updateParticles.comp");*/
-
 	water->setParticlesInGridsSource= CompileComputeShader("setParticlesInGrids.comp"); 
 	water->parallelSortSource = CompileComputeShader("SortParticles.comp");
-	water->HashTableSource = CompileComputeShader("HashLookupTable.comp");
+	water->hashTableSource = CompileComputeShader("HashLookupTable.comp");
 	water->updateDensityPressureSource = CompileComputeShader("calcDensityandPressure.comp");
 	water->updatePressureAccelerationSource = CompileComputeShader("calcPressureForce.comp");
 	water->updateParticlesSource = CompileComputeShader("UpdateParticles.comp");
 	water->resetHashTableSource = CompileComputeShader("ResetHashLookupTable.comp");
 	water->preMarchingCubesSource = CompileComputeShader("preMarchingCubes.comp");
-	water->MarchingCubesSource = CompileComputeShader("MarchingCubes.comp");
-
+	water->marchingCubesSource = CompileComputeShader("MarchingCubes.comp");
 }
 
 GLuint TutorialGame::CompileComputeShader(const std::string& filename)
@@ -142,7 +127,7 @@ GLuint TutorialGame::CompileComputeShader(const std::string& filename)
 }
 
 TutorialGame::~TutorialGame()	{
-	delete sphereMesh;
+	delete cubeMesh;
 
 	delete basicTex;
 	delete basicShader;
@@ -155,14 +140,12 @@ TutorialGame::~TutorialGame()	{
 
 void TutorialGame::UpdateGame(float dt) {
 
-	if (!inSelectionMode) {
-		world->GetMainCamera().UpdateCamera(dt);
-	}
+	world->GetMainCamera().UpdateCamera(dt);
 
 	world->UpdateWorld(dt);
 
-	handleInput();
-	updateUI();
+	HandleInput();
+	UpdateUI();
 
 	water->Update(dt);
 
@@ -187,29 +170,27 @@ rigid body representation. This and the cube function will let you build a lot o
 physics worlds. You'll probably need another function for the creation of OBB cubes too.
 
 */
-GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius, float inverseMass , bool isHollow , float elasticity) {
-	GameObject* sphere = new GameObject("sphere");
+GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, float radius, float inverseMass , bool isHollow , float elasticity) {
+	GameObject* cubeObj = new GameObject("cubeObj");
 
-	Vector3 sphereSize = Vector3(radius, radius, radius);
-	/*SphereVolume* volume = new SphereVolume(radius);
-	sphere->SetBoundingVolume((CollisionVolume*)volume);*/
+	Vector3 cubeHalfSize = Vector3(radius, radius, radius);
 
-	sphere->GetTransform()
-		.SetScale(sphereSize)
+	cubeObj->GetTransform()
+		.SetScale(cubeHalfSize)
 		.SetPosition(position);
 
-	sphere->SetRenderObject(new RenderObject(&sphere->GetTransform(), sphereMesh, basicTex, instancedParticleShader));
+	cubeObj->SetRenderObject(new RenderObject(&cubeObj->GetTransform(), cubeMesh, basicTex, instancedParticleShader));
 
-	sphere->GetRenderObject()->SetColour(Vector4(0, 0, 1, 0.9f));
+	cubeObj->GetRenderObject()->SetColour(Vector4(0, 0, 1, 0.9f));
 
-	world->AddGameObject(sphere);
+	world->AddGameObject(cubeObj);
 
-	sphereMesh->SetInstanceCount(water->getNumParticles());
+	cubeMesh->SetInstanceCount(water->getNumParticles());
 
-	return sphere;
+	return cubeObj;
 }
 
-void NCL::CSC8503::TutorialGame::handleInput()
+void NCL::CSC8503::TutorialGame::HandleInput()
 {
 	if (Window::GetKeyboard()->KeyDown(KeyCodes::F1)) {
 		renderer->setRenderParticles(false);
@@ -231,7 +212,7 @@ void NCL::CSC8503::TutorialGame::handleInput()
 	}
 }
 
-void TutorialGame::updateUI()
+void TutorialGame::UpdateUI()
 {
 	Debug::Print("Press F1 to render surface", Vector2(5, 85), Vector4(1, 0, 0, 1));
 	Debug::Print("Press F2 to render particles", Vector2(5, 90), Vector4(1, 0, 0, 1));
@@ -239,7 +220,7 @@ void TutorialGame::updateUI()
 }
 
 void TutorialGame::InitParticle() {
-	ParticleObject = AddSphereToWorld(Vector3(0, 0, 0), 0.5f);
+	ParticleObject = AddCubeToWorld(Vector3(0, 0, 0), 0.5f);
 }
 
 

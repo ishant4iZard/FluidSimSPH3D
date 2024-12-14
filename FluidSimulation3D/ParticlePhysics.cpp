@@ -8,11 +8,11 @@
 using namespace NCL::CSC8503;
 
 SPH::SPH(GameWorld& ingameWorld) : gameWorld(ingameWorld) {
-    InitializeParticles();
-    InitializeMarchingCubesVariables();
-    InitializeHashingAndSortingVariables();
-    GridStart(); // this function is called before InitializeOpenGLBuffers so that particle data will be set properly while initalising buffer
-    InitializeOpenGLBuffers();
+    initializeParticles();
+    initializeMarchingCubesVariables();
+    initializeHashingAndSortingVariables();
+    gridStart(); // this function is called before initializeOpenGLBuffers so that particle data will be set properly while initalising buffer
+    initializeOpenGLBuffers();
 
     m_fenceEdges = calculateEdges(m_fence);
     m_isRenderParticles = false;
@@ -32,18 +32,18 @@ SPH::~SPH()
 
     glDeleteProgram(setParticlesInGridsSource);
     glDeleteProgram(parallelSortSource);
-    glDeleteProgram(HashTableSource);
+    glDeleteProgram(hashTableSource);
     glDeleteProgram(updateDensityPressureSource);
     glDeleteProgram(updatePressureAccelerationSource);
     glDeleteProgram(updateParticlesSource);
     glDeleteProgram(resetHashTableSource);
     glDeleteProgram(preMarchingCubesSource);
-    glDeleteProgram(MarchingCubesSource);
+    glDeleteProgram(marchingCubesSource);
 
     glFinish();
 }
 
-void SPH::InitializeParticles() {
+void SPH::initializeParticles() {
     m_numParticles = 200000;
     m_particles.resize(m_numParticles);
 
@@ -62,7 +62,7 @@ void SPH::InitializeParticles() {
     m_particleSmoothingKernelDerivativeMultiplier = 5 * (12 / (PI * pow(m_particleSmoothingRadius / 10, 4)));
 }
 
-void SPH::InitializeMarchingCubesVariables() {
+void SPH::initializeMarchingCubesVariables() {
     m_marchingCubesSize = 2.f;
     m_numCubesXaxisMarchingCubes = floor((m_fence.right - m_fence.left) / m_marchingCubesSize) + 2;
     m_numCubesYaxisMarchingCubes = floor((m_fence.top - m_fence.bottom) / m_marchingCubesSize) + 2;
@@ -71,7 +71,7 @@ void SPH::InitializeMarchingCubesVariables() {
     m_marchingCubesIsoLevel = 3;
 }
 
-void SPH::InitializeHashingAndSortingVariables() {
+void SPH::initializeHashingAndSortingVariables() {
     l2numparticles = NextPowerOfTwo(m_numParticles);
     numStages = static_cast<int>(std::log2(l2numparticles));
     m_sortingLocalSizeX = 16;
@@ -80,7 +80,7 @@ void SPH::InitializeHashingAndSortingVariables() {
     resetHashLookupTable();
 }
 
-void SPH::InitializeOpenGLBuffers() {
+void SPH::initializeOpenGLBuffers() {
     glGenBuffers(1, &m_particleBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_particleBuffer);
     glBufferData(GL_SHADER_STORAGE_BUFFER, m_numParticles * sizeof(Particle), m_particles.data(), GL_DYNAMIC_DRAW);
@@ -129,20 +129,20 @@ void SPH::InitializeOpenGLBuffers() {
 
 void::SPH::Update(float dt) {
     if (nextHashingFrame == 0) {
-        SetParticlesInGridsHashingGPU();
+        setParticlesInGridsHashingGPU();
         nextHashingFrame = kHashFrameInterval;
     }
     else {
         nextHashingFrame--;
     }
 
-    UpdateDensityandPressureGridGPU();
-    UpdatePressureAccelerationGridGPU();
+    updateDensityandPressureGridGPU();
+    updatePressureAccelerationGridGPU();
     updateParticleGPU(dt);
 
     if (m_isRenderSurface) {
-        PreMarchingCubes();
-        MarchingCubes();
+        preMarchingCubes();
+        marchingCubes();
     }
 
     for (int i = 0; i < m_fenceEdges.size(); i++) {
@@ -158,7 +158,7 @@ void::SPH::Update(float dt) {
     //updateParticle(dt, PosList);
 }
 
-void SPH::GridStart()
+void SPH::gridStart()
 {
     Vector3 offsetVec(0, 0,0);
 
@@ -185,7 +185,7 @@ void SPH::GridStart()
 }
 
 #pragma region GPUBasedFunction
-void SPH::SetParticlesInGridsHashingGPU()
+void SPH::setParticlesInGridsHashingGPU()
 {
     glUseProgram(setParticlesInGridsSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_particleBuffer);
@@ -217,7 +217,7 @@ void SPH::SetParticlesInGridsHashingGPU()
 
     resetHashLookupTableGPU();
 
-    glUseProgram(HashTableSource);
+    glUseProgram(hashTableSource);
     glUniform1i(0, m_numParticles);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_particleBuffer);
 
@@ -226,7 +226,7 @@ void SPH::SetParticlesInGridsHashingGPU()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void SPH::UpdateDensityandPressureGridGPU()
+void SPH::updateDensityandPressureGridGPU()
 {
     glUseProgram(updateDensityPressureSource);
 
@@ -248,7 +248,7 @@ void SPH::UpdateDensityandPressureGridGPU()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void SPH::UpdatePressureAccelerationGridGPU()
+void SPH::updatePressureAccelerationGridGPU()
 {
     glUseProgram(updatePressureAccelerationSource);
 
@@ -311,7 +311,7 @@ void SPH::resetHashLookupTableGPU()
 
 }
 
-void SPH::PreMarchingCubes()
+void SPH::preMarchingCubes()
 {
     glUseProgram(preMarchingCubesSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_particleBuffer);
@@ -337,12 +337,12 @@ void SPH::PreMarchingCubes()
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
-void SPH::MarchingCubes()
+void SPH::marchingCubes()
 {
     m_numTriMarchingCubes = 0;
     glNamedBufferSubData(m_counterBuffer, 0, sizeof(unsigned int), &m_numTriMarchingCubes);
 
-    glUseProgram(MarchingCubesSource);
+    glUseProgram(marchingCubesSource);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_neighbourParticlesBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, m_triangleBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, m_counterBuffer);

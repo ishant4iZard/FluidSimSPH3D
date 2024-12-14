@@ -43,6 +43,9 @@ void main() {
     uint index = gl_GlobalInvocationID.x;
     if (index >= particles.length()) return;
 
+    vec3 mini = vec3(fence.left, fence.bottom, fence.front);
+    vec3 maxi = vec3(fence.right, fence.top, fence.back);
+
     Particle p = particles[index];
 
     vec3 velocity = p.Velocity + p.PressureAcceleration * dt;
@@ -51,32 +54,14 @@ void main() {
 
     vec3 position = p.Position + velocity * dt;
 
-    float radiusOffset = 0.0001f + particleRadius + smoothingRadius;
+    vec3 radiusOffset = vec3(particleRadius + smoothingRadius);
 
-    if (position.y >= fence.top - particleRadius - smoothingRadius) {
-        position.y = fence.top - radiusOffset;
-        velocity.y = -velocity.y * dampingRate;
-    }
-    if (position.y <= fence.bottom + particleRadius + smoothingRadius) {
-        position.y = fence.bottom + radiusOffset;
-        velocity.y = -velocity.y * dampingRate;
-    }
-    if (position.x >= fence.right - particleRadius -smoothingRadius) {
-        position.x = fence.right - radiusOffset;
-        velocity.x = -velocity.x * dampingRate;
-    }
-    if (position.x <= fence.left + particleRadius +smoothingRadius) {
-        position.x = fence.left + radiusOffset;
-        velocity.x = -velocity.x * dampingRate;
-    }
-    if (position.z >= fence.back - particleRadius -smoothingRadius) {
-        position.z = fence.back - radiusOffset;
-        velocity.z = -velocity.z * dampingRate;
-    }
-    if (position.z <= fence.front + particleRadius+smoothingRadius) {
-        position.z = fence.front + radiusOffset;
-        velocity.z = -velocity.z * dampingRate;
-    }
+    vec3 collisionMask = step(position, mini + radiusOffset) + step(maxi - radiusOffset, position);
+    vec3 collisionNormal = sign(collisionMask) * 2.0 - 1.0;
+
+    position = clamp(position, mini + radiusOffset, maxi - radiusOffset);
+
+    velocity = mix(velocity, velocity * -dampingRate, collisionMask);
 
     float predictionTimestep = 1 / 120.0f;
 
@@ -85,9 +70,7 @@ void main() {
     particles[index].Velocity = velocity;
     particles[index].Position = position;
 
-    particles[index].PredictedPosition.x = clamp(predictedPosition.x, float(fence.left+radiusOffset), float(fence.right-radiusOffset));
-    particles[index].PredictedPosition.y = clamp(predictedPosition.y, float(fence.bottom+radiusOffset), float(fence.top-radiusOffset));
-    particles[index].PredictedPosition.z = clamp(predictedPosition.z, float(fence.front+radiusOffset), float(fence.back-radiusOffset));
+    particles[index].PredictedPosition = clamp(predictedPosition, mini + radiusOffset, maxi - radiusOffset);
 
     if(position.y > maxY){
         atomicMax(maxY, int(position.y+1));

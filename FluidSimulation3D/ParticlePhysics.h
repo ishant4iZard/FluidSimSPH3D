@@ -132,7 +132,7 @@ namespace NCL {
 
 #pragma endregion
 
-			void GridStart();
+			void gridStart();
 
 			// CPU-Based Functions (currently redacted)
 #pragma region CPUFunction
@@ -146,14 +146,14 @@ namespace NCL {
 
 			// GPU-Based Functions
 #pragma region GPUFunction
-			void SetParticlesInGridsHashingGPU();
-			void UpdateDensityandPressureGridGPU();
-			void UpdatePressureAccelerationGridGPU();
+			void setParticlesInGridsHashingGPU();
+			void updateDensityandPressureGridGPU();
+			void updatePressureAccelerationGridGPU();
 			void updateParticleGPU(float dt);
 			void resetHashLookupTableGPU();
 
-			void PreMarchingCubes();
-			void MarchingCubes();
+			void preMarchingCubes();
+			void marchingCubes();
 #pragma endregion
 
 #pragma region Buffers
@@ -214,21 +214,21 @@ namespace NCL {
 			}
 
 		private:
-			void InitializeParticles();
-			void InitializeMarchingCubesVariables();
-			void InitializeHashingAndSortingVariables();
-			void InitializeOpenGLBuffers();
+			void initializeParticles();
+			void initializeMarchingCubesVariables();
+			void initializeHashingAndSortingVariables();
+			void initializeOpenGLBuffers();
 
 		public:
 			GLuint setParticlesInGridsSource;
 			GLuint parallelSortSource;
-			GLuint HashTableSource;
+			GLuint hashTableSource;
 			GLuint updateDensityPressureSource;
 			GLuint updatePressureAccelerationSource;
 			GLuint updateParticlesSource;
 			GLuint resetHashTableSource;
 			GLuint preMarchingCubesSource;
-			GLuint MarchingCubesSource;
+			GLuint marchingCubesSource;
 		};
 	}
 }

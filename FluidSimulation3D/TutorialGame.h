@@ -29,7 +29,7 @@ namespace NCL {
 
 			void InitCamera();
 
-			GameObject* AddSphereToWorld(const Vector3& position, float radius, float inverseMass = 10.0f , bool isHollow = false, float elasticity = 0.81f);
+			GameObject* AddCubeToWorld(const Vector3& position, float radius, float inverseMass = 10.0f , bool isHollow = false, float elasticity = 0.81f);
 
 
 #ifdef USEVULKAN
@@ -41,19 +41,15 @@ namespace NCL {
 
 			KeyboardMouseController controller;
 
-			bool useGravity;
-			bool inSelectionMode;
-
-			Mesh*	sphereMesh	= nullptr;
+			Mesh*	cubeMesh	= nullptr;
 
 			Texture*	basicTex	= nullptr;
-			Texture*	sandTex		= nullptr;
 			Shader*		basicShader = nullptr;
 			Shader*		instancedParticleShader = nullptr;
 
-			void handleInput();
+			void HandleInput();
 
-			void updateUI();
+			void UpdateUI();
 			
 			void InitParticle();
 			//Vector3* positionList;
