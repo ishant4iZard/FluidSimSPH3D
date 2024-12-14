@@ -63,7 +63,7 @@ To build the project, follow these steps:
 
 1. **Clone the Repository**:
     ```bash
-    git clone https://github.com/ishant4iZard/FLuidSimSPH3D.git
+    git clone https://github.com/ishant4iZard/FluidSimSPH3D.git
     cd FluidSimulation3D
     ```
 
