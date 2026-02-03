@@ -2,6 +2,21 @@
 
 A project that implements a fluid simulation using the **Smoothed Particle Hydrodynamics (SPH)** method, integrated with the **Marching Cubes** algorithm for surface reconstruction. It leverages both CPU and GPU computations, utilizing OpenGL compute shaders for efficient handling of particle updates, density and pressure calculations, and mesh generation.
 
+## Project Background & Evolution
+
+This project is an extension of earlier experimental work focused on understanding and validating fluid simulation fundamentals.
+
+The initial phase of development involved a **CPU-based 2D fluid simulation using Smoothed Particle Hydrodynamics (SPH)**. That prototype was primarily used for **concept validation, kernel testing, stability analysis, and debugging of density–pressure formulations** before scaling the system to higher dimensions and GPU execution.
+
+Building on the insights gained from that prototype, this project expands the simulation to **3D**, introduces **GPU acceleration via OpenGL compute shaders**, and integrates **Marching Cubes** for real-time surface reconstruction. The transition from CPU-based 2D simulation to GPU-driven 3D simulation reflects a deliberate focus on **performance, scalability, and real-time visualization**.
+
+- 🔗 **Initial CPU-based 2D SPH Fluid Simulation (Concept & Testing Project)**  
+  [Link to 2D Fluid Simulation Repository](https://github.com/ishant4iZard/FluidSim2D)
+
+- 📄 **MSc Dissertation**  
+  This project forms part of the research presented in my MSc dissertation, which explores real-time fluid simulation, GPU acceleration, and surface reconstruction techniques.  
+  [Link to Dissertation Paper (PDF)](https://drive.google.com/file/d/1FMxboMflBgVL7bYzuTaE5OknR5CsvVwt/view?usp=sharing)
+
 ## Features
 
 - **SPH Simulation**: Models fluid dynamics using the Smoothed Particle Hydrodynamics method.
